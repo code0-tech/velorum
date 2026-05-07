@@ -1,16 +1,33 @@
-# This is a sample Python script.
-
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
-
-
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+from src.orchestrator.Prompt_orchestrator import PromptOrchestrator
+from src.schema.FlowType_schema import FlowType
+from src.store.Function_store import FunctionStore
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+if __name__ == '__main__':
+    # function store
+    function_store = FunctionStore()
+
+    # orchestrator
+    prompt_orchestrator = PromptOrchestrator()
+
+    prompt = "Erstelle einen HTTP Event Flow, der zuerst den Request loggt und dann 'Event empfangen' an Slack sendet."
+    results = function_store.search(
+        prompt=prompt
+    )
+
+    print(results)
+
+    generated_flow = prompt_orchestrator.generate(
+        prompt=prompt,
+        available_functions=results,
+        available_flow_types=[
+            FlowType(
+                identifier="http_event_flow",
+                names="HTTP Event Flow",
+                descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
+                signature="(): void",
+            )
+        ],
+    )
+
+    print(generated_flow.model_dump_json(indent=2, by_alias=True, exclude_none=True))
