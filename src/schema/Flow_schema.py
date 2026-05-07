@@ -9,7 +9,7 @@ class ReferencePath(BaseModel):
 
 
 class ReferenceValue(BaseModel):
-    typename: Literal["LiteralValue"] = Field(default="ReferenceValue", alias="__typename")
+    typename: Literal["LiteralValue"] = Field("ReferenceValue", alias="__typename")
     input_index: Optional[int] = Field(None, alias="inputIndex")
     node_function_id: Optional[int] = Field(None, alias="nodeFunctionId")
     parameter_index: Optional[int] = Field(None, alias="parameterIndex")
@@ -18,13 +18,13 @@ class ReferenceValue(BaseModel):
 
 
 class NodeFunctionIdWrapper(BaseModel):
-    typename: Literal["LiteralValue"] = Field(default="NodeFunctionIdWrapper", alias="__typename")
+    typename: Literal["LiteralValue"] = Field("NodeFunctionIdWrapper", alias="__typename")
     id: int
     model_config = ConfigDict(populate_by_name=True)
 
 
 class LiteralValue(BaseModel):
-    typename: Literal["LiteralValue"] = Field(default="LiteralValue", alias="__typename")
+    typename: Literal["LiteralValue"] = Field("LiteralValue", alias="__typename")
     value: Any
     model_config = ConfigDict(populate_by_name=True)
 
