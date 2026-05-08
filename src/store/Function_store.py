@@ -5,7 +5,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 
-from src.schema.Function_schema import FunctionDefinition
+from src.schema.Function_schema import FunctionDefinition, ParameterDefinition
 
 
 class FunctionStore:
@@ -31,7 +31,20 @@ class FunctionStore:
 
         points = []
         for idx, item in enumerate(data):
-            fn = FunctionDefinition.model_validate(item)
+            fn = FunctionDefinition(
+                names=item.get("names")[0]["content"],
+                aliases=item.get("aliases")[0]["content"],
+                descriptions=item.get("descriptions")[0]["content"],
+                identifier=item.get("identifier"),
+                signature=item.get("signature"),
+                parameterDefinitions=[
+                    ParameterDefinition(
+                        descriptions=pd["descriptions"][0]["content"],
+                        names=pd["names"][0]["content"],
+                    )
+                    for pd in item.get("parameterDefinitions")["nodes"]
+                ]
+            )
 
             name_val = fn.names or ""
             desc_val = fn.descriptions or ""
