@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import instructor
-from litellm import completion
+from litellm import completion, max_tokens
 from litellm.types.completion import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
 from src.schema.FlowType_schema import FlowType
@@ -56,6 +56,7 @@ class PromptOrchestrator:
             max_retries=3,
             strict=True,
             timeout=20,
+            max_tokens=10000,
             top_p=0,
             temperature=0.0,
         )
