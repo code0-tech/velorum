@@ -6,13 +6,15 @@ from src.store.Function_store import FunctionStore
 if __name__ == '__main__':
     # function store
     function_store = FunctionStore()
+    function_store.insert_from_json("./test/functions.json")
 
     # orchestrator
     prompt_orchestrator = PromptOrchestrator()
 
     prompt = "Erstelle einen HTTP Event Flow, der zuerst den Request loggt und dann 'Event empfangen' an Slack sendet."
     results = function_store.search(
-        prompt=prompt
+        prompt=prompt,
+        limit=5
     )
 
     print(results)
