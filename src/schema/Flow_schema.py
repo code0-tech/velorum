@@ -1,6 +1,6 @@
-from typing import Union, Literal, Optional, List, Any
+from typing import Union, Literal, Optional, List, Any, Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, Discriminator
 
 
 class ReferencePath(BaseModel):
@@ -9,44 +9,35 @@ class ReferencePath(BaseModel):
 
 
 class ReferenceValue(BaseModel):
-    typename: Literal["LiteralValue"] = Field("ReferenceValue", alias="__typename")
     input_index: Optional[int] = Field(None, alias="inputIndex")
-    node_function_id: Optional[int] = Field(None, alias="nodeFunctionId")
+    node_id: Optional[int] = Field(None, alias="nodeFunctionId")
     parameter_index: Optional[int] = Field(None, alias="parameterIndex")
     reference_path: Optional[List[ReferencePath]] = Field(None, alias="referencePath")
     model_config = ConfigDict(populate_by_name=True)
 
 
-class NodeFunctionIdWrapper(BaseModel):
-    typename: Literal["LiteralValue"] = Field("NodeFunctionIdWrapper", alias="__typename")
-    id: int
+class SubFlowValue(BaseModel):
+    starting_node_id: int = Field(alias="startingNodeId")
     model_config = ConfigDict(populate_by_name=True)
 
 
 class LiteralValue(BaseModel):
-    typename: Literal["LiteralValue"] = Field("LiteralValue", alias="__typename")
     value: Any
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(populate_by_name=True, extra='forbid')
 
 
-NodeParameterValue = Union[LiteralValue, NodeFunctionIdWrapper, ReferenceValue]
-
-
-class NodeParameter(BaseModel):
-    value: NodeParameterValue
-    model_config = ConfigDict(populate_by_name=True)
-
+NodeParameterValue = Union[LiteralValue, SubFlowValue, ReferenceValue]
 
 class NodeFunction(BaseModel):
-    function_definition: str = Field(alias="functionDefinition")
+    function_identifier: str = Field(alias="functionIdentifier")
     id: int
     next_node_id: Optional[int] = Field(None, alias="nextNodeId")
-    parameters: Optional[List[NodeParameter]] = Field(None)
+    parameters: Optional[List[NodeParameterValue]] = Field(None)
     model_config = ConfigDict(populate_by_name=True)
 
 
 class FlowSetting(BaseModel):
-    value: Any
+    value: Any = Field(None)
     model_config = ConfigDict(populate_by_name=True)
 
 
