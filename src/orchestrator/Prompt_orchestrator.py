@@ -25,8 +25,8 @@ class PromptOrchestrator:
             available_flow_types: List[FlowType],
             available_functions: List[FunctionDefinition]
     ) -> Flow:
-        flow_types_json = [t.model_dump(by_alias=True) for t in available_flow_types]
-        functions_json = [f.model_dump(by_alias=True) for f in available_functions]
+        flow_types_json = [f"{t.identifier}{t.signature}" for t in available_flow_types]
+        functions_json = [f"{f.identifier}{f.signature}" for f in available_functions]
 
         messages = [
             ChatCompletionSystemMessageParam(
