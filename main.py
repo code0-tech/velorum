@@ -17,8 +17,6 @@ if __name__ == '__main__':
         limit=5
     )
 
-    print(results)
-
     generated_flow = prompt_orchestrator.generate(
         prompt=prompt,
         available_functions=results,
