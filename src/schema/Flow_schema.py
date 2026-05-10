@@ -1,6 +1,6 @@
-from typing import Union, Literal, Optional, List, Any, Annotated
+from typing import Union, Optional, List, Any
 
-from pydantic import BaseModel, ConfigDict, Field, Discriminator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ReferencePath(BaseModel):
@@ -8,10 +8,14 @@ class ReferencePath(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class ReferenceValue(BaseModel):
-    input_index: Optional[int] = Field(None, alias="inputIndex")
+class SubFlowReferenceValue(BaseModel):
     node_id: Optional[int] = Field(None, alias="nodeFunctionId")
+    input_index: Optional[int] = Field(None, alias="inputIndex")
     parameter_index: Optional[int] = Field(None, alias="parameterIndex")
+    reference_path: Optional[List[ReferencePath]] = Field(None, alias="referencePath")
+
+class NodeReferenceValue(BaseModel):
+    node_id: Optional[int] = Field(None, alias="nodeFunctionId")
     reference_path: Optional[List[ReferencePath]] = Field(None, alias="referencePath")
     model_config = ConfigDict(populate_by_name=True)
 
@@ -26,7 +30,8 @@ class LiteralValue(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='forbid')
 
 
-NodeParameterValue = Union[LiteralValue, SubFlowValue, ReferenceValue]
+NodeParameterValue = Union[LiteralValue, SubFlowValue, NodeReferenceValue, SubFlowReferenceValue]
+
 
 class NodeFunction(BaseModel):
     function_identifier: str = Field(alias="functionIdentifier")
