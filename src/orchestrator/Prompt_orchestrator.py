@@ -22,6 +22,7 @@ class PromptOrchestrator:
     def generate(
             self,
             prompt: str,
+            few_shots: List[ChatCompletionUserMessageParam],
             available_flow_types: List[FlowType],
             available_functions: List[FunctionDefinition]
     ) -> Flow:
@@ -39,10 +40,12 @@ class PromptOrchestrator:
                     f"USE FUNCTIONS from: {functions_json}\n"
                 )
             ),
+            *few_shots,
             ChatCompletionUserMessageParam(
                 role="user",
                 content=f"Generate a Flow for: {prompt} in JSON format"
-            )
+            ),
+            {"role": "assistant", "content": "{"}
         ]
 
         print("messages", messages)
@@ -57,8 +60,9 @@ class PromptOrchestrator:
             strict=True,
             timeout=20,
             max_tokens=10000,
-            top_p=0,
+            top_p=0.1,
             temperature=0.0,
+            include_reasoning=False,
         )
 
         return flow
