@@ -1,0 +1,1075 @@
+[
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/1",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "LIST",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "T[]",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Generic List"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "list;array;collection"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "List of ${T}"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/2",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "NUMBER",
+    "genericKeys": [],
+    "type": "number",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Number"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "number;integer;float;double;long"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Number"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/3",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "TEXT",
+    "genericKeys": [],
+    "type": "string",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Text"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "text;char;literal;string"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Text"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/4",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "BOOLEAN",
+    "genericKeys": [],
+    "type": "boolean",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Boolean"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "bool;boolean;bit"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Boolean"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/5",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "HTTP_METHOD",
+    "genericKeys": [],
+    "type": "'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD'",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Method"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;method;get;post;put;delete;path;head"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Method"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/6",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "TEXT_ENCODING",
+    "genericKeys": [],
+    "type": "'BASE64'",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Text Encoding"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "text;encoding;base64"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Text Encoding"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/7",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "OBJECT",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "{ [K in keyof T]: T[K] }",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Object"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "object;struct;data"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Object"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/8",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "RUNNABLE",
+    "genericKeys": [],
+    "type": "() => void",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Node"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "node;function"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Node"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/9",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "TRANSFORM",
+    "genericKeys": [
+      "I",
+      "R"
+    ],
+    "type": "(item: I) => R",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Transform"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "transform"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Transform ${I} to ${R}"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/10",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CONSUMER",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "(item: T) => void",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Consumer"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "use;consumer;consume;lambda"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Use ${T}"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/11",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CRON_DAY_OF_WEEK",
+    "genericKeys": [],
+    "type": "string | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN'",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Day of Week"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;day;week"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Day of Week"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/1",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^(\\*|([0-7])(-([0-7]))?)(\\/([0-7]))?(,(\\*|([0-7])(-([0-7]))?)(\\/([0-7]))?)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "MQ",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/12",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CRON_DAY_OF_MONTH",
+    "genericKeys": [],
+    "type": "string",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Day of Month"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;month;day"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Day of Month"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/2",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^(\\*|([1-9]|[12]\\d|3[01])(-([1-9]|[12]\\d|3[01]))?)(\\/([1-9]|[12]\\d|3[01]))?(,(\\*|([1-9]|[12]\\d|3[01])(-([1-9]|[12]\\d|3[01]))?)(\\/([1-9]|[12]\\d|3[01]))?)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "Mg",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/13",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CRON_MONTH",
+    "genericKeys": [],
+    "type": "string | 'JAN' | 'FEB' | 'MAR' | 'APR' | 'MAY' | 'JUN' | 'JUL' | 'AUG' | 'SEP' | 'OCT' | 'NOV' | 'DEC' ",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Month"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;month"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Month"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/3",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^(\\*|(0?[1-9]|1[0-2])(-(0?[1-9]|1[0-2]))?)(\\/(0?[1-9]|1[0-2]))?(,(\\*|(0?[1-9]|1[0-2])(-(0?[1-9]|1[0-2]))?)(\\/(0?[1-9]|1[0-2]))?)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "Mw",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/14",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CRON_MINUTE",
+    "genericKeys": [],
+    "type": "string",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Minute"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;minute"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Minute"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/4",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^(\\*|([0-5]?\\d)(-[0-5]?\\d)?)(\\/[0-5]?\\d)?(,(\\*|([0-5]?\\d)(-[0-5]?\\d)?)(\\/[0-5]?\\d)?)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "NA",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/15",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "CRON_HOUR",
+    "genericKeys": [],
+    "type": "string",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Hour"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;hour"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Cron Hour"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/5",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^(\\*|([01]?\\d|2[0-3])(-([01]?\\d|2[0-3]))?)(\\/([01]?\\d|2[0-3]))?(,(\\*|([01]?\\d|2[0-3])(-([01]?\\d|2[0-3]))?)(\\/([01]?\\d|2[0-3]))?)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "NQ",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/16",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "HTTP_URL",
+    "genericKeys": [],
+    "type": "TEXT",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Route"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;route;url"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Route"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/6",
+          "variant": "REGEX",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesRegexConfig",
+            "pattern": "^/\\w+(?:[.:~-]\\w+)*(?:/\\w+(?:[.:~-]\\w+)*)*$"
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "Ng",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/17",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "HTTP_STATUS_CODE",
+    "genericKeys": [],
+    "type": "NUMBER",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Status Code"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;status;code"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Status Code"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 1,
+      "nodes": [
+        {
+          "__typename": "DataTypeRule",
+          "id": "gid://sagittarius/DataTypeRule/7",
+          "variant": "NUMBER_RANGE",
+          "updatedAt": "2026-03-15T16:27:27Z",
+          "createdAt": "2026-03-15T16:27:27Z",
+          "config": {
+            "__typename": "DataTypeRulesNumberRangeConfig",
+            "from": 100,
+            "steps": 0,
+            "to": 599
+          }
+        }
+      ],
+      "pageInfo": {
+        "endCursor": "Nw",
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/18",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "HTTP_RESPONSE",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "{ body: T, headers: OBJECT<{}>, status_code: HTTP_STATUS_CODE }",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Response"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;response;object"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Response"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/19",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "HTTP_REQUEST",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "{ method: HTTP_METHOD, url: HTTP_URL, body: T, headers: OBJECT<{}> }",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Request"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;request"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "HTTP Request"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/20",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "PREDICATE",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "(item: T) => BOOLEAN",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Predicate"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "predicate"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Predicate of ${T}"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/21",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "COMPARATOR",
+    "genericKeys": [
+      "I"
+    ],
+    "type": "(left: I, right: I) => NUMBER",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Comparator"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "compare;comparator"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Compare ${I}"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  },
+  {
+    "__typename": "DataType",
+    "id": "gid://sagittarius/DataType/22",
+    "createdAt": "2026-03-15T16:27:27Z",
+    "updatedAt": "2026-03-15T16:27:27Z",
+    "identifier": "REST_ADAPTER_INPUT",
+    "genericKeys": [
+      "T"
+    ],
+    "type": "{ body: T, headers: OBJECT<{}> }",
+    "name": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Rest Adapter Input"
+      }
+    ],
+    "aliases": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "http;rest;adapter;input"
+      }
+    ],
+    "displayMessages": [
+      {
+        "__typename": "Translation",
+        "code": "en-US",
+        "content": "Rest Adapter Input"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/2",
+      "__typename": "Runtime"
+    },
+    "rules": {
+      "__typename": "DataTypeRuleConnection",
+      "count": 0,
+      "nodes": [],
+      "pageInfo": {
+        "endCursor": null,
+        "hasNextPage": false,
+        "__typename": "PageInfo"
+      }
+    }
+  }
+]
