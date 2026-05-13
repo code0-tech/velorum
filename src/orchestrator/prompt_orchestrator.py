@@ -5,9 +5,9 @@ import instructor
 from litellm import completion, max_tokens
 from litellm.types.completion import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
-from src.schema.FlowType_schema import FlowType
-from src.schema.Flow_schema import Flow
-from src.schema.Function_schema import FunctionDefinition
+from src.schema.flow_type_schema import FlowType
+from src.schema.flow_schema import Flow
+from src.schema.function_schema import FunctionDefinition
 
 llm_api_key = os.getenv("LLM_API_KEY")
 llm_api_base = os.getenv("LLM_API_BASE")

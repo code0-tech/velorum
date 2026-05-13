@@ -1,10 +1,10 @@
 # Press the green button in the gutter to run the script.
 from litellm.types.completion import ChatCompletionUserMessageParam
 
-from src.orchestrator.Prompt_orchestrator import PromptOrchestrator
-from src.schema.FlowType_schema import FlowType
-from src.schema.Flow_schema import Flow
-from src.store.Function_store import FunctionStore
+from src.orchestrator.prompt_orchestrator import PromptOrchestrator
+from src.schema.flow_type_schema import FlowType
+from src.schema.flow_schema import Flow
+from src.store.function_store import FunctionStore
 
 if __name__ == '__main__':
     # function store

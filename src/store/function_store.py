@@ -6,7 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, MatchAny, Filter, FieldCondition, MatchValue
 from sentence_transformers import SentenceTransformer
 
-from src.schema.Function_schema import FunctionDefinition, ParameterDefinition
+from src.schema.function_schema import FunctionDefinition, ParameterDefinition
 
 
 def resolve_ts_signature(signature, type_defs):
