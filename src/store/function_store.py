@@ -199,6 +199,34 @@ class FunctionStore:
             for hit in response.points
         ]
 
+    def get_all(self) -> List[FunctionDefinition]:
+        functions: List[FunctionDefinition] = []
+        offset = None
+
+        while True:
+            points, next_page_offset = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=256,
+                with_payload=True,
+                offset=offset,
+            )
+
+            if not points:
+                break
+
+            functions.extend(
+                FunctionDefinition.model_validate(point.payload)
+                for point in points
+                if point.payload is not None
+            )
+
+            if next_page_offset is None:
+                break
+
+            offset = next_page_offset
+
+        return functions
+
     def combine(
             self,
             first_list: List[FunctionDefinition],
