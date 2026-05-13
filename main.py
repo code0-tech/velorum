@@ -1,7 +1,7 @@
-# Press the green button in the gutter to run the script.
 from litellm.types.completion import ChatCompletionUserMessageParam
 
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
+from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_type_schema import FlowType
 from src.schema.flow_schema import Flow
 from src.store.function_store import FunctionStore
@@ -163,4 +163,9 @@ if __name__ == '__main__':
         ],
     )
 
-    print(generated_flow.model_dump_json(indent=2, by_alias=True, exclude_none=True))
+    print(flow_postprocessing(generated_flow, [FlowType(
+        identifier="http_event_flow",
+        names="HTTP Event Flow",
+        descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
+        signature="(): void",
+    )], function_store.get_all()).model_dump_json(indent=2, by_alias=True, exclude_none=True))
