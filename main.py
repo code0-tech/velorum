@@ -1,171 +1,45 @@
-from litellm.types.completion import ChatCompletionUserMessageParam
+import concurrent.futures
+import os
+import sys
+import time
 
-from src.orchestrator.prompt_orchestrator import PromptOrchestrator
-from src.postprocessing.flow_post import flow_postprocessing
-from src.schema.flow_type_schema import FlowType
-from src.schema.flow_schema import Flow
-from src.store.function_store import FunctionStore
+import grpc
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+venv_site_packages = os.path.join(current_dir, ".venv", "lib", "python3.12", "site-packages")
+
+# 2. Den Pfad hinzufügen, wo 'velorum' als Paket drinliegt
+target_path = os.path.join(venv_site_packages, "tucana", "generated")
+
+if target_path not in sys.path:
+    sys.path.insert(0, target_path)
+
+import tucana.generated.velorum.generate_pb2_grpc as pb2_grpc
+import tucana.generated.velorum.generate_pb2 as pb2
+from grpc_reflection.v1alpha import reflection
+
+from src.endpoint.generation.generate_endpoint import GenerateService
 
 if __name__ == '__main__':
-    # function store
-    function_store = FunctionStore()
-    function_store.insert_from_json("./test/functions.json", "./test/datatypes.json")
 
-    # orchestrator
-    prompt_orchestrator = PromptOrchestrator()
+    server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
+    pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
 
-    prompt = "Erstelle einen HTTP Event Flow, der zuerst den Request loggt und dann 'Event empfangen' an Slack sendet."
-    prompt_functions = function_store.search(
-        prompt=prompt,
-        limit=10
+    port = "0.0.0.0:50051"
+    server.add_insecure_port(port)
+    print(f"Velorum GenerateService läuft auf {port}...")
+
+    SERVICE_NAMES = (
+        pb2.DESCRIPTOR.services_by_name['GenerateService'].full_name,
+        reflection.SERVICE_NAME,
     )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
 
-    few_shots = [
-        ChatCompletionUserMessageParam(role="user", content="Erstelle einen Webhook flow, welche4 ein user objekt speichert und anschließend die mail als response zurückgibt."),
-        {
-            "role": "assistant",
-            "content": Flow(**{
-                "name": "User email webhook",
-                "nodes": [
-                    {
-                        "functionIdentifier": "std::control::value",
-                        "id": 1,
-                        "nextNodeId": 2,
-                        "parameters": [
-                            {
-                                "value": {
-                                    "email": "test@test.com",
-                                    "username": "test",
-                                }
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "http::response::create",
-                        "id": 2,
-                        "nextNodeId": 3,
-                        "parameters": [
-                            {
-                                "value": 200
-                            },
-                            {
-                                "value": {}
-                            },
-                            {
-                                "nodeFunctionId": 1,
-                                "referencePath": [{
-                                    "path": "email"
-                                }]
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "rest::control::respond",
-                        "id": 3,
-                        "parameters": [
-                            {
-                                "nodeFunctionId": 2,
-                            }
-                        ],
-                    }
-                ],
-                "startingNodeId": 1,
-                "type": "http_event_flow"
-            }).model_dump_json()
-        },
-        ChatCompletionUserMessageParam(role="user", content="Erstelle einen Webhook flow, welcher über die Liste [1,2,3] iteriert und jede Zahl mal zwei rechnet und das Eregbnis zurückgibt."),
-        {
-            "role": "assistant",
-            "content": Flow(**{
-                "name": "Map list webhook flow",
-                "nodes": [
-                    {
-                        "functionIdentifier": "std::list::map",
-                        "id": 1,
-                        "nextNodeId": 4,
-                        "parameters": [
-                            {
-                                "value": [1, 2, 3]
-                            },
-                            {
-                                "startingNodeId": 2
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "std::number::multiply",
-                        "id": 2,
-                        "nextNodeId": 3,
-                        "parameters": [
-                            {
-                                "nodeFunctionId": 1,
-                                "parameterIndex": 1,
-                                "input_index": 0
-                            },
-                            {
-                                "value": 2
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "std::control::return",
-                        "id": 3,
-                        "parameters": [
-                            {
-                                "nodeFunctionId": 2,
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "http::response::create",
-                        "id": 4,
-                        "nextNodeId": 5,
-                        "parameters": [
-                            {
-                                "value": 200
-                            },
-                            {
-                                "value": {}
-                            },
-                            {
-                                "nodeFunctionId": 1,
-                            }
-                        ],
-                    },
-                    {
-                        "functionIdentifier": "rest::control::respond",
-                        "id": 5,
-                        "parameters": [
-                            {
-                                "nodeFunctionId": 4,
-                            }
-                        ],
-                    }
-                ],
-                "startingNodeId": 1,
-                "type": "http_event_flow"
-            }).model_dump_json()
-        },
-    ]
-    few_shot_functions = function_store.find_all(["std::control::value", "http::response::create", "rest::control::respond", "std::list::map", "std::control::return", "std::number::multiply"])
+    server.start()
 
-    generated_flow = prompt_orchestrator.generate(
-        prompt=prompt,
-        few_shots=few_shots,
-        available_functions=function_store.combine(prompt_functions, few_shot_functions),
-        available_flow_types=[
-            FlowType(
-                identifier="http_event_flow",
-                names="HTTP Event Flow",
-                descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
-                signature="(): void",
-            )
-        ],
-    )
-
-    print(flow_postprocessing(generated_flow, [FlowType(
-        identifier="http_event_flow",
-        names="HTTP Event Flow",
-        descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
-        signature="(): void",
-    )], function_store.get_all()).model_dump_json(indent=2, by_alias=True, exclude_none=True))
+    try:
+        while True:
+            time.sleep(86400)
+    except KeyboardInterrupt:
+        print("\nServer wird sauber heruntergefahren...")
+        server.stop(0)
