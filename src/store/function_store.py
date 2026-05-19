@@ -1,12 +1,12 @@
-import json
 import re
-from typing import List
+from typing import List, Any
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct, MatchAny, Filter, FieldCondition, MatchValue
 from sentence_transformers import SentenceTransformer
 
-from src.schema.function_schema import FunctionDefinition, ParameterDefinition
+from src.schema.data_type_schema import DataType
+from src.schema.function_schema import FunctionDefinition
+from src.store.store import Store
 
 
 def resolve_ts_signature(signature, type_defs):
@@ -80,164 +80,45 @@ def resolve_ts_signature(signature, type_defs):
     return resolve(signature)
 
 
-class FunctionStore:
-    def __init__(self, collection_name="functions"):
-        self.client = QdrantClient(":memory:")
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.collection_name = collection_name
-        self._setup_collection()
-
-    def _setup_collection(self):
-        if not self.client.collection_exists(collection_name=self.collection_name):
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=VectorParams(
-                    size=384,
-                    distance=Distance.COSINE
-                ),
-            )
-
-    def insert_from_json(self, functions_file_path: str, datatype_file_path: str):
-        with open(functions_file_path, 'r') as f:
-            functions = json.load(f)
-
-        with open(datatype_file_path, 'r') as f:
-            datatypes = [
-                f"type {d['identifier']}{'<' + ','.join(d['genericKeys']) + '>' if d['genericKeys'] else ''} = {d['type']}"
-                for d in json.load(f)
-            ]
-
-        points = []
-
-        for idx, item in enumerate(functions):
-            fn = FunctionDefinition(
-                names=item.get("names")[0]["content"],
-                aliases=item.get("aliases")[0]["content"],
-                descriptions=item.get("descriptions")[0]["content"],
-                identifier=item.get("identifier"),
-                signature=resolve_ts_signature(item.get("signature"), datatypes),
-                parameterDefinitions=[
-                    ParameterDefinition(
-                        descriptions=pd["descriptions"][0]["content"],
-                        names=pd["names"][0]["content"],
-                    )
-                    for pd in item.get("parameterDefinitions")["nodes"]
-                ]
-            )
-
-            name_val = fn.names or ""
-            desc_val = fn.descriptions or ""
-            text_to_embed = f"{name_val}: {desc_val}"
-
-            vector = self.model.encode(text_to_embed).tolist()
-
-            points.append(PointStruct(
-                id=idx,
-                vector=vector,
-                payload=fn.model_dump(by_alias=True)
-            ))
-
-        self.client.upsert(collection_name=self.collection_name, points=points)
-
-    def search(self, prompt: str, limit=5) -> List[FunctionDefinition]:
-        query_vector = self.model.encode(prompt).tolist()
-
-        response = self.client.query_points(
-            collection_name=self.collection_name,
-            query=query_vector,
-            limit=limit,
-            with_payload=True
+class FunctionStore(Store):
+    def __init__(self):
+        super().__init__(
+            QdrantClient(":memory:"),
+            SentenceTransformer('all-MiniLM-L6-v2'),
+            'functions',
+            "identifier",
+            "project_id"
         )
 
-        return [
-            FunctionDefinition.model_validate(hit.payload)
-            for hit in response.points
+    def insert_from_definition(self, group_identifier: str, payload: FunctionDefinition,
+                               data_types: List[DataType]) -> None:
+        datatypes = [
+            f"type {d.identifier}{'<' + ','.join(d.generic_keys) + '>' if d.generic_keys else ''} = {d.type}"
+            for d in data_types
         ]
 
-    def find(self, identifier: str) -> FunctionDefinition | None:
+        payload.signature = resolve_ts_signature(payload.signature, datatypes)
 
-        response = self.client.query_points(
-            collection_name=self.collection_name,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="identifier",
-                        match=MatchValue(value=identifier)
-                    )
-                ]
-            ),
-            limit=1,
-            with_payload=True
-        )
+        self.insert(group_identifier, payload.model_dump())
 
-        if response.points:
-            return FunctionDefinition.model_validate(response.points[0].payload)
+    def validate(self, payload: Any) -> FunctionDefinition:
+        return FunctionDefinition.model_validate(payload)
 
-        return None
+    def search(self, group_identifier: str, prompt: str, limit=5) -> List[FunctionDefinition]:
+        return super().search(prompt, group_identifier, limit)
 
-    def find_all(self, identifiers: List[str]) -> List[FunctionDefinition]:
+    def find(self, group_identifier: str, identifier: str) -> FunctionDefinition | None:
+        return super().find(group_identifier, identifier)
 
-        if not identifiers:
-            return []
+    def find_all(self, group_identifier: str, identifiers: List[str]) -> List[FunctionDefinition]:
+        return super().find_all(group_identifier, identifiers)
 
-        response = self.client.query_points(
-            collection_name=self.collection_name,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="identifier",
-                        match=MatchAny(any=identifiers)
-                    )
-                ]
-            ),
-            limit=len(identifiers),
-            with_payload=True
-        )
-
-        return [
-            FunctionDefinition.model_validate(hit.payload)
-            for hit in response.points
-        ]
-
-    def get_all(self) -> List[FunctionDefinition]:
-        functions: List[FunctionDefinition] = []
-        offset = None
-
-        while True:
-            points, next_page_offset = self.client.scroll(
-                collection_name=self.collection_name,
-                limit=256,
-                with_payload=True,
-                offset=offset,
-            )
-
-            if not points:
-                break
-
-            functions.extend(
-                FunctionDefinition.model_validate(point.payload)
-                for point in points
-                if point.payload is not None
-            )
-
-            if next_page_offset is None:
-                break
-
-            offset = next_page_offset
-
-        return functions
+    def get_all(self, group_identifier: str) -> List[FunctionDefinition]:
+        return super().get_all(group_identifier)
 
     def combine(
             self,
             first_list: List[FunctionDefinition],
             second_list: List[FunctionDefinition]
     ) -> List[FunctionDefinition]:
-        seen_identifiers = set()
-        combined = []
-
-        for fn in first_list + second_list:
-            if fn.identifier not in seen_identifiers:
-                combined.append(fn)
-                seen_identifiers.add(fn.identifier)
-
-        return combined
+        return super().combine(first_list, second_list)
