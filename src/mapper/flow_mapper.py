@@ -1,11 +1,11 @@
-import tucana.generated.shared.struct_pb2 as shared_struct_pb2
+import tucana.generated.shared.struct_pb2 as struct_pb2
 import tucana.generated.shared.flow_pb2 as flow_pb2
 
 def map_pydantic_value_to_grpc(py_value):
-    grpc_val = shared_struct_pb2.Value()
+    grpc_val = struct_pb2.Value()
 
     if py_value is None:
-        grpc_val.null_value = shared_struct_pb2.NULL_VALUE
+        grpc_val.null_value = struct_pb2.NullValue()
     elif isinstance(py_value, bool):
         grpc_val.bool_value = py_value
     elif isinstance(py_value, int):
@@ -17,12 +17,12 @@ def map_pydantic_value_to_grpc(py_value):
     elif isinstance(py_value, str):
         grpc_val.string_value = py_value
     elif isinstance(py_value, list):
-        list_val = shared_struct_pb2.ListValue()
+        list_val = struct_pb2.ListValue()
         for v in py_value:
             list_val.values.append(map_pydantic_value_to_grpc(v))
         grpc_val.list_value.CopyFrom(list_val)
     elif isinstance(py_value, dict):
-        struct_val = shared_struct_pb2.Struct()
+        struct_val = struct_pb2.Struct()
         for k, v in py_value.items():
             struct_val.fields[k].CopyFrom(map_pydantic_value_to_grpc(v))
         grpc_val.struct_value.CopyFrom(struct_val)
