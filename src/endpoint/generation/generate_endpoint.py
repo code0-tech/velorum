@@ -14,7 +14,6 @@ from src.mapper.function_mapper import map_to_function_schema
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
 from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
-from src.schema.flow_type_schema import FlowType
 from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
 
@@ -87,20 +86,22 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 data_types=data_types
             )
 
-        print("2")
-
         for ft in flow_types:
             self.flow_type_store.insert(
                 group_identifier=str(request.project_id),
                 payload=ft,
             )
 
-        print("3")
-
         prompt_functions = self.function_store.search(
             group_identifier=str(request.project_id),
             prompt=request.prompt,
             limit=10
+        )
+
+        prompt_flow_types = self.flow_type_store.search(
+            group_identifier=str(request.project_id),
+            prompt=request.prompt,
+            limit=2
         )
 
         few_shots = [
@@ -250,33 +251,25 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             ]
         )
 
-        print("3")
-
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
                 prompt=request.prompt,
                 few_shots=few_shots,
                 available_functions=self.function_store.combine(prompt_functions, few_shot_functions),
-                available_flow_types=[
-                    FlowType(
-                        identifier="http_event_flow",
-                        names="HTTP Event Flow",
-                        descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
-                        signature="(): void",
-                    )
-                ],
+                available_flow_types=self.flow_type_store.combine(prompt_flow_types, few_shots_flow_types)
             )
 
             current_time_ms = int(time.time() * 1000)
             return pb2.FlowResponse(
-                flow=map_pydantic_flow_to_grpc(flow_postprocessing(generated_flow, [
-                    FlowType(
-                        identifier="http_event_flow",
-                        names="HTTP Event Flow",
-                        descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
-                        signature="(): void",
+                flow=map_pydantic_flow_to_grpc(
+                    flow_postprocessing(
+                        generated_flow,
+                        self.flow_type_store.combine(prompt_flow_types,
+                                                     few_shots_flow_types),
+                        self.function_store.combine(prompt_functions,
+                                                    few_shot_functions)
                     )
-                ], self.function_store.combine(prompt_functions, few_shot_functions))),
+                ),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
