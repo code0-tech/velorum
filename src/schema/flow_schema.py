@@ -8,11 +8,18 @@ class ReferencePath(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class TriggerReferenceValue(BaseModel):
+    reference_path: Optional[List[ReferencePath]] = Field(None, alias="referencePath")
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class SubFlowReferenceValue(BaseModel):
     node_id: Optional[int] = Field(None, alias="nodeFunctionId")
     input_index: Optional[int] = Field(None, alias="inputIndex")
     parameter_index: Optional[int] = Field(None, alias="parameterIndex")
     reference_path: Optional[List[ReferencePath]] = Field(None, alias="referencePath")
+    model_config = ConfigDict(populate_by_name=True)
+
 
 class NodeReferenceValue(BaseModel):
     node_id: Optional[int] = Field(None, alias="nodeFunctionId")
@@ -30,7 +37,7 @@ class LiteralValue(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='forbid')
 
 
-NodeParameterValue = Union[LiteralValue, SubFlowValue, NodeReferenceValue, SubFlowReferenceValue]
+NodeParameterValue = Union[LiteralValue, SubFlowValue, NodeReferenceValue, SubFlowReferenceValue, TriggerReferenceValue]
 
 
 class NodeFunction(BaseModel):
