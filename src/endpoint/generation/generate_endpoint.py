@@ -62,8 +62,6 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
             )
 
-        print("1")
-
         functions = [
             map_to_function_schema(fn)
             for fn in request.functions
@@ -156,7 +154,15 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                         }
                     ],
                     "startingNodeId": 1,
-                    "type": "REST"
+                    "type": "REST",
+                    "settings": [
+                        {
+                            "value": "/webhook/user"
+                        },
+                        {
+                            "value": "GET"
+                        }
+                    ]
                 }).model_dump_json()
             },
             ChatCompletionUserMessageParam(role="user",
@@ -230,7 +236,15 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                         }
                     ],
                     "startingNodeId": 1,
-                    "type": "REST"
+                    "type": "REST",
+                    "settings": [
+                        {
+                            "value": "/webhook/map"
+                        },
+                        {
+                            "value": "GET"
+                        }
+                    ]
                 }).model_dump_json()
             },
         ]
