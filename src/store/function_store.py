@@ -81,10 +81,10 @@ def resolve_ts_signature(signature, type_defs):
 
 
 class FunctionStore(Store):
-    def __init__(self):
+    def __init__(self, memory_client: QdrantClient, vector_model: SentenceTransformer):
         super().__init__(
-            QdrantClient(":memory:"),
-            SentenceTransformer('all-MiniLM-L6-v2'),
+            memory_client,
+            vector_model,
             'functions',
             "identifier",
             "project_id"
