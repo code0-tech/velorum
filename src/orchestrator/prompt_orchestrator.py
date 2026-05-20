@@ -56,7 +56,7 @@ class PromptOrchestrator:
             messages=messages,
             max_retries=5,
             strict=True,
-            timeout=20,
+            timeout=60,
             max_tokens=50000,
             top_p=0.1,
             temperature=0.0,
