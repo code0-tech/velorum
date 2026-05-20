@@ -99,7 +99,7 @@ class FunctionStore(Store):
 
         payload.signature = resolve_ts_signature(payload.signature, datatypes)
 
-        self.insert(group_identifier, payload.model_dump())
+        self.insert(group_identifier, payload)
 
     def validate(self, payload: Any) -> FunctionDefinition:
         return FunctionDefinition.model_validate(payload)

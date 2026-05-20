@@ -87,9 +87,10 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
 
         for ft in flow_types:
-            self.flow_type_store.insert(
+            self.flow_type_store.insert_from_definition(
                 group_identifier=str(request.project_id),
                 payload=ft,
+                data_types=data_types
             )
 
         prompt_functions = self.function_store.search(

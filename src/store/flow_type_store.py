@@ -4,6 +4,7 @@ from typing import List, Any
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
+from src.schema.data_type_schema import DataType
 from src.schema.flow_type_schema import FlowType
 from src.store.store import Store
 
@@ -89,7 +90,15 @@ class FlowTypeStore(Store):
             "project_id"
         )
 
-    def insert(self, group_identifier: str, payload: FlowType) -> None:
+    def insert_from_definition(self, group_identifier: str, payload: FlowType,
+                               data_types: List[DataType]) -> None:
+        datatypes = [
+            f"type {d.identifier}{'<' + ','.join(d.generic_keys) + '>' if d.generic_keys else ''} = {d.type}"
+            for d in data_types
+        ]
+
+        payload.signature = resolve_ts_signature(payload.signature, datatypes)
+
         super().insert(group_identifier, payload)
 
     def validate(self, payload: Any) -> FlowType:
