@@ -4,13 +4,15 @@ import grpc
 import tucana.generated.velorum.generate_pb2 as pb2
 import tucana.generated.velorum.generate_pb2_grpc as pb2_grpc
 from litellm.types.completion import ChatCompletionUserMessageParam
+from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
 from src.mapper.data_type_mapper import map_to_data_type_schema
-from src.mapper.flow_mapper import map_pydantic_flow_to_grpc
+from src.mapper.flow_mapper import map_to_grpc_flow, map_to_flow_schema
 from src.mapper.flow_types_mapper import map_to_flow_type_schema
 from src.mapper.function_mapper import map_to_function_schema
+from src.orchestrator.flow_orchestrator import FlowOrchestrator
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
 from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
@@ -26,6 +28,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         self.function_store = FunctionStore(self.memory_client, self.vector_model)
         self.flow_type_store = FlowTypeStore(self.memory_client, self.vector_model)
         self.prompt_orchestrator = PromptOrchestrator()
+        self.flow_orchestrator = FlowOrchestrator()
         pass
 
     def Prompt(self, request: pb2.PromptRequest, context) -> pb2.FlowResponse:
@@ -276,7 +279,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
             current_time_ms = int(time.time() * 1000)
             return pb2.FlowResponse(
-                flow=map_pydantic_flow_to_grpc(
+                flow=map_to_grpc_flow(
                     flow_postprocessing(
                         generated_flow,
                         self.flow_type_store.combine(prompt_flow_types,
@@ -295,6 +298,116 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
 
     def Flow(self, request: pb2.FlowRequest, context) -> pb2.FlowResponse:
-        return context.abort(
-            code=grpc.StatusCode.UNIMPLEMENTED
+        if not request.project_id:
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details="The 'project_id' field cannot be empty. Please provide a valid project_id for flow generation."
+            )
+
+        if not request.prompt or not request.prompt.strip():
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details="The 'prompt' field cannot be empty. Please provide a valid prompt for flow generation."
+            )
+
+        if not request.flow:
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details="The 'flow' field is invalid. Please provide a valid flow for flow generation."
+            )
+
+        try:
+            Flow.model_validate(map_to_flow_schema(request.flow))
+        except ValidationError as e:
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details=f"The 'flow' field is invalid: {str(e)}"
+            )
+
+        if len(
+                self.function_store.get_all(
+                    group_identifier=str(request.project_id)
+                )
+        ) <= 0 and (len(request.functions) <= 0):
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
+            )
+
+        if len(
+                self.flow_type_store.get_all(
+                    group_identifier=str(request.project_id)
+                )
+        ) <= 0 and (len(request.flow_types) <= 0):
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
+            )
+
+        functions = [
+            map_to_function_schema(fn)
+            for fn in request.functions
+        ]
+
+        data_types = [
+            map_to_data_type_schema(dt)
+            for dt in request.data_types
+        ]
+
+        flow_types = [
+            map_to_flow_type_schema(ft)
+            for ft in request.flow_types
+        ]
+
+        for fn in functions:
+            self.function_store.insert_from_definition(
+                group_identifier=str(request.project_id),
+                payload=fn,
+                data_types=data_types
+            )
+
+        for ft in flow_types:
+            self.flow_type_store.insert_from_definition(
+                group_identifier=str(request.project_id),
+                payload=ft,
+                data_types=data_types
+            )
+
+        prompt_functions = self.function_store.search(
+            group_identifier=str(request.project_id),
+            prompt=request.prompt,
+            limit=10
         )
+
+        prompt_flow_types = self.flow_type_store.search(
+            group_identifier=str(request.project_id),
+            prompt=request.prompt,
+            limit=2
+        )
+
+        try:
+            generated_flow, completion = self.flow_orchestrator.generate(
+                prompt=request.prompt,
+                flow=map_to_flow_schema(request.flow),
+                few_shots=[],
+                available_functions=prompt_functions,
+                available_flow_types=prompt_flow_types
+            )
+
+            current_time_ms = int(time.time() * 1000)
+            return pb2.FlowResponse(
+                flow=map_to_grpc_flow(
+                    flow_postprocessing(
+                        generated_flow,
+                        prompt_flow_types,
+                        prompt_functions
+                    )
+                ),
+                cached_until=current_time_ms + 300000,
+                usage=completion.usage.total_tokens
+            )
+        except Exception as e:
+            context.abort(
+                code=grpc.StatusCode.INTERNAL,
+                details="An unexpected error occurred during flow generation."
+            )
