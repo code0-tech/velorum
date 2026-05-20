@@ -9,6 +9,7 @@ from src.mapper.data_type_mapper import map_to_data_type_schema
 from src.mapper.flow_mapper import map_pydantic_flow_to_grpc
 from src.mapper.function_mapper import map_to_function_schema
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
+from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
 from src.schema.flow_type_schema import FlowType
 from src.store.function_store import FunctionStore
@@ -226,7 +227,14 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
             current_time_ms = int(time.time() * 1000)
             return pb2.FlowResponse(
-                flow=map_pydantic_flow_to_grpc(generated_flow),
+                flow=map_pydantic_flow_to_grpc(flow_postprocessing(generated_flow, [
+                    FlowType(
+                        identifier="http_event_flow",
+                        names="HTTP Event Flow",
+                        descriptions="Ein Flow, der durch HTTP-Events ausgelöst wird.",
+                        signature="(): void",
+                    )
+                ], self.function_store.combine(prompt_functions, few_shot_functions))),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
