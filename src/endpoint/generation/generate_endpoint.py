@@ -4,21 +4,28 @@ import grpc
 import tucana.generated.velorum.generate_pb2 as pb2
 import tucana.generated.velorum.generate_pb2_grpc as pb2_grpc
 from litellm.types.completion import ChatCompletionUserMessageParam
+from qdrant_client import QdrantClient
+from sentence_transformers import SentenceTransformer
 
 from src.mapper.data_type_mapper import map_to_data_type_schema
 from src.mapper.flow_mapper import map_pydantic_flow_to_grpc
+from src.mapper.flow_types_mapper import map_to_flow_type_schema
 from src.mapper.function_mapper import map_to_function_schema
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
 from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
 from src.schema.flow_type_schema import FlowType
+from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
 
 
 class GenerateService(pb2_grpc.GenerateServiceServicer):
 
     def __init__(self):
-        self.function_store = FunctionStore()
+        self.memory_client = QdrantClient(":memory:")
+        self.vector_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.function_store = FunctionStore(self.memory_client, self.vector_model)
+        self.flow_type_store = FlowTypeStore(self.memory_client, self.vector_model)
         self.prompt_orchestrator = PromptOrchestrator()
         pass
 
@@ -46,6 +53,18 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
             )
 
+        if len(
+                self.flow_type_store.get_all(
+                    group_identifier=str(request.project_id)
+                )
+        ) <= 0 and (len(request.flow_types) <= 0):
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
+            )
+
+        print("1")
+
         functions = [
             map_to_function_schema(fn)
             for fn in request.functions
@@ -56,12 +75,27 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             for dt in request.data_types
         ]
 
+        flow_types = [
+            map_to_flow_type_schema(ft)
+            for ft in request.flow_types
+        ]
+
         for fn in functions:
             self.function_store.insert_from_definition(
                 group_identifier=str(request.project_id),
                 payload=fn,
                 data_types=data_types
             )
+
+        print("2")
+
+        for ft in flow_types:
+            self.flow_type_store.insert(
+                group_identifier=str(request.project_id),
+                payload=ft,
+            )
+
+        print("3")
 
         prompt_functions = self.function_store.search(
             group_identifier=str(request.project_id),
@@ -120,7 +154,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                         }
                     ],
                     "startingNodeId": 1,
-                    "type": "http_event_flow"
+                    "type": "REST"
                 }).model_dump_json()
             },
             ChatCompletionUserMessageParam(role="user",
@@ -194,7 +228,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                         }
                     ],
                     "startingNodeId": 1,
-                    "type": "http_event_flow"
+                    "type": "REST"
                 }).model_dump_json()
             },
         ]
@@ -209,6 +243,14 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 "std::number::multiply"
             ]
         )
+        few_shots_flow_types = self.flow_type_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=[
+                "REST"
+            ]
+        )
+
+        print("3")
 
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
