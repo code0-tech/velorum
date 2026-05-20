@@ -1,0 +1,248 @@
+[
+  {
+    "__typename": "FlowType",
+    "id": "gid://sagittarius/FlowType/1",
+    "updatedAt": "2026-05-16T15:26:19Z",
+    "createdAt": "2026-04-25T23:36:35Z",
+    "identifier": "CRON",
+    "names": [
+      {
+        "code": "en-US",
+        "content": "Cron Job",
+        "__typename": "Translation"
+      }
+    ],
+    "aliases": [
+      {
+        "code": "en-US",
+        "content": "cron;code;schedule;timer;clock;flow",
+        "__typename": "Translation"
+      }
+    ],
+    "displayMessages": [
+      {
+        "code": "en-US",
+        "content": "Schedule Job ${cron_code}",
+        "__typename": "Translation"
+      }
+    ],
+    "descriptions": [
+      {
+        "code": "en-US",
+        "content": "A Cron Job is a scheduled task that runs automatically at specified intervals, typically defined using cron expressions. It is commonly used to automate repetitive operations such as data processing, system maintenance, and periodic updates without requiring manual execution.",
+        "__typename": "Translation"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/1",
+      "__typename": "Runtime"
+    },
+    "signature": "(cronMinute: CRON_MINUTE, cronHour: CRON_HOUR, cronDayOfMonth: CRON_DAY_OF_MONTH, cronMonth: CRON_MONTH, cronDayOfWeek: CRON_DAY_OF_WEEK): void",
+    "flowTypeSettings": [
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/1",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "cronMinute",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Minute"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Defines the minute when the flow runs (e.g., 0 for on the hour, */5 for every 5 minutes)."
+          }
+        ]
+      },
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/2",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "cronHour",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Hour"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Defines the hour when the flow runs (e.g., 0 for midnight, 14 for 2 PM)."
+          }
+        ]
+      },
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/3",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "cronDayOfMonth",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Day of the Month"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Defines the day of the month when the flow runs (e.g., 1 for first day, 15 for mid-month)."
+          }
+        ]
+      },
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/4",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "cronMonth",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Month"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Defines the month when the flow runs (e.g., 1 for January, 12 for December)."
+          }
+        ]
+      },
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/5",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "cronDayOfWeek",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Day of the Week"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Defines the weekday when the flow runs (e.g., 0 or SUN for Sunday, MON-FRI for weekdays)."
+          }
+        ]
+      }
+    ],
+    "editable": false,
+    "definitionSource": "draco-none",
+    "displayIcon": "tabler:file-time",
+    "version": "0.0.25"
+  },
+  {
+    "__typename": "FlowType",
+    "id": "gid://sagittarius/FlowType/2",
+    "updatedAt": "2026-05-16T15:26:19Z",
+    "createdAt": "2026-04-25T23:36:35Z",
+    "identifier": "REST",
+    "names": [
+      {
+        "code": "en-US",
+        "content": "Rest Endpoint",
+        "__typename": "Translation"
+      }
+    ],
+    "aliases": [
+      {
+        "code": "en-US",
+        "content": "http;rest;route;web;webhook",
+        "__typename": "Translation"
+      }
+    ],
+    "displayMessages": [
+      {
+        "code": "en-US",
+        "content": "Trigger Rest-Flow on ${method} with a Request to ${route}",
+        "__typename": "Translation"
+      }
+    ],
+    "descriptions": [
+      {
+        "code": "en-US",
+        "content": "A REST API is a web service that lets clients interact with data on a server using standard HTTP methods like GET, POST, PUT, and DELETE usually returning results in JSON format.",
+        "__typename": "Translation"
+      }
+    ],
+    "runtime": {
+      "id": "gid://sagittarius/Runtime/1",
+      "__typename": "Runtime"
+    },
+    "signature": "(httpURL: HTTP_URL, httpMethod: HTTP_METHOD): REST_ADAPTER_INPUT<{}>",
+    "flowTypeSettings": [
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/6",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "httpURL",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "URL"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Specifies the HTTP URL endpoint."
+          }
+        ]
+      },
+      {
+        "__typename": "FlowTypeSetting",
+        "id": "gid://sagittarius/FlowTypeSetting/7",
+        "createdAt": "2026-04-25T23:36:35Z",
+        "updatedAt": "2026-05-16T15:26:19Z",
+        "identifier": "httpMethod",
+        "unique": true,
+        "names": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Method"
+          }
+        ],
+        "descriptions": [
+          {
+            "__typename": "Translation",
+            "code": "en-US",
+            "content": "Specifies the HTTP request method (e.g., GET, POST, PUT, DELETE)."
+          }
+        ]
+      }
+    ],
+    "editable": true,
+    "definitionSource": "draco-none",
+    "displayIcon": "tabler:world-www",
+    "version": "0.0.25"
+  }
+]
