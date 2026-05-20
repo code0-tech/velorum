@@ -3,7 +3,7 @@ name = "velorum"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "apscheduler>=3.11.2",
     "grpcio>=1.80.0",
@@ -13,5 +13,5 @@ dependencies = [
     "pydantic==2.12.5",
     "qdrant-client>=1.16.1",
     "sentence-transformers>=5.1.2",
-    "tucana>=0.0.71",
+    "tucana==0.0.72",
 ]
