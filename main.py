@@ -14,23 +14,28 @@ target_path = os.path.join(venv_site_packages, "tucana", "generated")
 if target_path not in sys.path:
     sys.path.insert(0, target_path)
 
-import tucana.generated.velorum.generate_pb2_grpc as pb2_grpc
-import tucana.generated.velorum.generate_pb2 as pb2
+import tucana.generated.velorum.generate_pb2_grpc as generate_pb2_grpc
+import tucana.generated.velorum.generate_pb2 as generate_pb2
+import tucana.generated.velorum.info_pb2_grpc as info_pb2_grpc
+import tucana.generated.velorum.info_pb2 as info_pb2
 from grpc_reflection.v1alpha import reflection
 
+from src.endpoint.info.info_endpoint import InfoService
 from src.endpoint.generation.generate_endpoint import GenerateService
 
 if __name__ == '__main__':
 
     server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
-    pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
+    generate_pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
+    info_pb2_grpc.add_InfoServiceServicer_to_server(InfoService(), server)
 
     port = "0.0.0.0:50051"
     server.add_insecure_port(port)
     print(f"Velorum GenerateService läuft auf {port}...")
 
     SERVICE_NAMES = (
-        pb2.DESCRIPTOR.services_by_name['GenerateService'].full_name,
+        generate_pb2.DESCRIPTOR.services_by_name['GenerateService'].full_name,
+        info_pb2.DESCRIPTOR.services_by_name['InfoService'].full_name,
         reflection.SERVICE_NAME,
     )
     reflection.enable_server_reflection(SERVICE_NAMES, server)
