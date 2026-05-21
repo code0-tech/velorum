@@ -5,6 +5,8 @@ import time
 
 import grpc
 
+from src.interceptor.auth_interceptor import AuthInterceptor
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 venv_site_packages = os.path.join(current_dir, ".venv", "lib", "python3.12", "site-packages")
 
@@ -25,7 +27,10 @@ from src.endpoint.generation.generate_endpoint import GenerateService
 
 if __name__ == '__main__':
 
-    server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(
+        concurrent.futures.ThreadPoolExecutor(max_workers=10),
+        interceptors=[AuthInterceptor()]
+    )
     generate_pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
     info_pb2_grpc.add_InfoServiceServicer_to_server(InfoService(), server)
 
