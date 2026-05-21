@@ -292,6 +292,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 usage=completion.usage.total_tokens
             )
         except Exception as e:
+            print(e)
             context.abort(
                 code=grpc.StatusCode.INTERNAL,
                 details="An unexpected error occurred during flow generation."
@@ -321,7 +322,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         except ValidationError as e:
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
-                details=f"The 'flow' field is invalid: {str(e)}"
+                details=f"The 'flow' field is invalid. Please provide a valid flow for flow generation."
             )
 
         if len(

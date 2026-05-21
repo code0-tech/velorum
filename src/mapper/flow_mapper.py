@@ -45,16 +45,16 @@ def map_to_grpc_flow(flow: Flow) -> flow_pb2.GenerationFlow:
                 grpc_node.next_node_id = node.next_node_id
 
             if node.parameters:
-                for idx, param in node.parameters:
+                for idx, param in enumerate(node.parameters):
                     grpc_param = flow_pb2.NodeParameter()
                     grpc_param.runtime_parameter_id = f"param_{idx}"
-                    grpc_param.value = map_to_grpc_value(param)
+                    grpc_param.value.CopyFrom(map_to_grpc_value(param))
                     grpc_node.parameters.append(grpc_param)
 
             grpc_flow.node_functions.append(grpc_node)
 
     if flow.settings:
-        for idx, setting in flow.settings:
+        for idx, setting in enumerate(flow.settings):
             grpc_setting = flow_pb2.FlowSetting()
             grpc_setting.flow_setting_id = f"setting_{idx}"
             grpc_setting.value.CopyFrom(map_to_grpc_literal_value(LiteralValue(value=setting.value)))

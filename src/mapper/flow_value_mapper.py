@@ -38,19 +38,24 @@ def map_to_value_schema(grpc_value: flow_pb2.NodeValue) -> NodeParameterValue:
 def map_to_grpc_value(value: NodeParameterValue) -> flow_pb2.NodeValue:
     grpc_val = flow_pb2.NodeValue()
     if hasattr(value, 'value'):
-        grpc_val.literal_value = map_to_grpc_literal_value(value)
-    elif hasattr(value, 'starting_node_id'):
-        grpc_val.sub_flow.starting_node_id = value.starting_node_id
+        grpc_val.literal_value.CopyFrom(map_to_grpc_literal_value(value))
+    elif hasattr(value, 'starting_node_id') and value.starting_node_id is not None:
+        grpc_sub_flow = flow_pb2.SubFlow()
+        grpc_sub_flow.starting_node_id = value.starting_node_id
+        grpc_val.sub_flow.CopyFrom(grpc_sub_flow)
     elif hasattr(value, 'node_id') and hasattr(value, 'input_index') and hasattr(value, 'parameter_index'):
-        grpc_val.reference_value.input_type.node_id = value.node_id
-        grpc_val.reference_value.input_type.parameter_index = value.parameter_index
-        grpc_val.reference_value.input_type.input_index = value.node_id
-    elif hasattr(value, 'node_id'):
+        if value.node_id is not None:
+            grpc_val.reference_value.input_type.node_id = value.node_id
+        if value.parameter_index is not None:
+            grpc_val.reference_value.input_type.parameter_index = value.parameter_index
+        if value.input_index is not None:
+            grpc_val.reference_value.input_type.input_index = value.input_index
+    elif hasattr(value, 'node_id') and value.node_id is not None:
         grpc_val.reference_value.node_id = value.node_id
     elif hasattr(value, 'reference_path'):
-        grpc_val.reference_value.flow_input = flow_pb2.FlowInput()
+        grpc_val.reference_value.flow_input.CopyFrom(flow_pb2.FlowInput())
 
-    if value.reference_path:
+    if hasattr(value, 'reference_path') and value.reference_path:
         for p in value.reference_path:
             grpc_path = flow_pb2.ReferencePath()
             if p.path:
