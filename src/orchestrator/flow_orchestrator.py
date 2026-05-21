@@ -1,4 +1,3 @@
-import os
 from typing import List, Any
 
 import instructor
@@ -8,19 +7,16 @@ from litellm.types.completion import ChatCompletionSystemMessageParam, ChatCompl
 from src.schema.flow_schema import Flow
 from src.schema.flow_type_schema import FlowType
 from src.schema.function_schema import FunctionDefinition
-
-llm_api_key = os.getenv("LLM_API_KEY")
-llm_api_base = os.getenv("LLM_API_BASE")
-llm_api_model = os.getenv("LLM_PROVIDER")
+from src.schema.model_schema import Model
 
 
 class FlowOrchestrator:
     def __init__(self):
         self.client = instructor.from_litellm(completion, mode=instructor.Mode.MD_JSON)
-        self.model = llm_api_model
 
     def generate(
             self,
+            model: Model,
             prompt: str,
             flow: Flow,
             few_shots: List[ChatCompletionUserMessageParam],
@@ -56,10 +52,10 @@ class FlowOrchestrator:
         ]
 
         flow, completion = self.client.chat.completions.create_with_completion(
-            model=self.model,
+            model=model.provider,
             response_model=Flow,
-            api_key=llm_api_key,
-            api_base=llm_api_base,
+            api_key=model.auth,
+            api_base=model.api,
             messages=messages,
             max_retries=5,
             strict=True,
