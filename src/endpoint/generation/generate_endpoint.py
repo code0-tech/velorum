@@ -18,6 +18,7 @@ from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
 from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
+from src.store.model_store import ModelStore
 
 
 class GenerateService(pb2_grpc.GenerateServiceServicer):
@@ -27,6 +28,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         self.vector_model = SentenceTransformer('all-MiniLM-L6-v2')
         self.function_store = FunctionStore(self.memory_client, self.vector_model)
         self.flow_type_store = FlowTypeStore(self.memory_client, self.vector_model)
+        self.model_store = ModelStore()
         self.prompt_orchestrator = PromptOrchestrator()
         self.flow_orchestrator = FlowOrchestrator()
         pass
@@ -43,6 +45,18 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'prompt' field cannot be empty. Please provide a valid prompt for flow generation."
+            )
+
+        if not request.model_identifier or not request.model_identifier.strip():
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details="The 'model_identifier' field cannot be empty. Please provide a valid model_identifier for flow generation."
+            )
+
+        if self.model_store.find(identifier=request.model_identifier) is None:
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
             )
 
         if len(
@@ -271,6 +285,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
+                model=self.model_store.find(identifier=request.model_identifier),
                 prompt=request.prompt,
                 few_shots=few_shots,
                 available_functions=self.function_store.combine(prompt_functions, few_shot_functions),
@@ -323,6 +338,18 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details=f"The 'flow' field is invalid. Please provide a valid flow for flow generation."
+            )
+
+        if not request.model_identifier or not request.model_identifier.strip():
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details="The 'model_identifier' field cannot be empty. Please provide a valid model_identifier for flow generation."
+            )
+
+        if self.model_store.find(identifier=request.model_identifier) is None:
+            context.abort(
+                code=grpc.StatusCode.INVALID_ARGUMENT,
+                details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
             )
 
         if len(
@@ -388,6 +415,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
         try:
             generated_flow, completion = self.flow_orchestrator.generate(
+                model=self.model_store.find(identifier=request.model_identifier),
                 prompt=request.prompt,
                 flow=map_to_flow_schema(request.flow),
                 few_shots=[],
