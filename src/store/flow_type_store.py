@@ -6,7 +6,7 @@ from sentence_transformers import SentenceTransformer
 
 from src.schema.data_type_schema import DataType
 from src.schema.flow_type_schema import FlowType
-from src.store.store import Store
+from src.store.vector_store import Store
 
 
 def resolve_ts_signature(signature, type_defs):
