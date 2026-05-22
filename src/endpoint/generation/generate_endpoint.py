@@ -6,7 +6,8 @@ import tucana.generated.velorum.generate_pb2_grpc as pb2_grpc
 from litellm.types.completion import ChatCompletionUserMessageParam
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
+
+from src.model import load_vector_model
 
 from src.mapper.data_type_mapper import map_to_data_type_schema
 from src.mapper.flow_mapper import map_to_grpc_flow, map_to_flow_schema
@@ -25,7 +26,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
     def __init__(self):
         self.memory_client = QdrantClient(":memory:")
-        self.vector_model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.vector_model = load_vector_model()
         self.function_store = FunctionStore(self.memory_client, self.vector_model)
         self.flow_type_store = FlowTypeStore(self.memory_client, self.vector_model)
         self.model_store = ModelStore()
