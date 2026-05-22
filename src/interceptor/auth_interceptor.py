@@ -8,6 +8,10 @@ VALID_TOKEN = os.getenv('SECURITY_TOKEN', 'velorum-internal-communication-secret
 class AuthInterceptor(grpc.ServerInterceptor):
 
     def intercept_service(self, continuation, handler_call_details):
+        method = handler_call_details.method or ''
+        if method.startswith('/grpc.health.v1.Health/'):
+            return continuation(handler_call_details)
+
         metadata = dict(handler_call_details.invocation_metadata or [])
         auth_token = metadata.get('authorization', '')
 
