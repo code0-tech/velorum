@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 models.configuration.json
+few_shots.configuration.json
 .venv
 env/
 venv/
