@@ -7,16 +7,16 @@ from litellm.types.completion import ChatCompletionUserMessageParam
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
 
-from src.model import load_vector_model
-
 from src.mapper.data_type_mapper import map_to_data_type_schema
 from src.mapper.flow_mapper import map_to_grpc_flow, map_to_flow_schema
 from src.mapper.flow_types_mapper import map_to_flow_type_schema
 from src.mapper.function_mapper import map_to_function_schema
+from src.model import load_vector_model
 from src.orchestrator.flow_orchestrator import FlowOrchestrator
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
 from src.postprocessing.flow_post import flow_postprocessing
 from src.schema.flow_schema import Flow
+from src.store.few_shots_store import FewShotsStore
 from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
 from src.store.model_store import ModelStore
@@ -29,6 +29,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         self.vector_model = load_vector_model()
         self.function_store = FunctionStore(self.memory_client, self.vector_model)
         self.flow_type_store = FlowTypeStore(self.memory_client, self.vector_model)
+        self.few_shots_store = FewShotsStore(self.memory_client, self.vector_model)
         self.model_store = ModelStore()
         self.prompt_orchestrator = PromptOrchestrator()
         self.flow_orchestrator = FlowOrchestrator()
@@ -121,151 +122,23 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             limit=2
         )
 
+        prompt_few_shots = self.few_shots_store.search(
+            group_identifier="global",
+            prompt=request.prompt,
+            limit=2
+        )
+
         few_shots = [
-            ChatCompletionUserMessageParam(role="user",
-                                           content="Erstelle einen Webhook flow, welche4 ein user objekt speichert und anschließend die mail als response zurückgibt."),
-            {
-                "role": "assistant",
-                "content": Flow(**{
-                    "name": "User email webhook",
-                    "nodes": [
-                        {
-                            "functionIdentifier": "std::control::value",
-                            "id": 1,
-                            "nextNodeId": 2,
-                            "parameters": [
-                                {
-                                    "value": {
-                                        "email": "test@test.com",
-                                        "username": "test",
-                                    }
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "http::response::create",
-                            "id": 2,
-                            "nextNodeId": 3,
-                            "parameters": [
-                                {
-                                    "value": 200
-                                },
-                                {
-                                    "value": {}
-                                },
-                                {
-                                    "nodeFunctionId": 1,
-                                    "referencePath": [{
-                                        "path": "email"
-                                    }]
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "rest::control::respond",
-                            "id": 3,
-                            "parameters": [
-                                {
-                                    "nodeFunctionId": 2,
-                                }
-                            ],
-                        }
-                    ],
-                    "startingNodeId": 1,
-                    "type": "REST",
-                    "settings": [
-                        {
-                            "value": "/webhook/user"
-                        },
-                        {
-                            "value": "GET"
-                        }
-                    ]
-                }).model_dump_json()
-            },
-            ChatCompletionUserMessageParam(role="user",
-                                           content="Erstelle einen Webhook flow, welcher über die Liste [1,2,3] iteriert und jede Zahl mal zwei rechnet und das Eregbnis zurückgibt."),
-            {
-                "role": "assistant",
-                "content": Flow(**{
-                    "name": "Map list webhook flow",
-                    "nodes": [
-                        {
-                            "functionIdentifier": "std::list::map",
-                            "id": 1,
-                            "nextNodeId": 4,
-                            "parameters": [
-                                {
-                                    "value": [1, 2, 3]
-                                },
-                                {
-                                    "startingNodeId": 2
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "std::number::multiply",
-                            "id": 2,
-                            "nextNodeId": 3,
-                            "parameters": [
-                                {
-                                    "nodeFunctionId": 1,
-                                    "parameterIndex": 1,
-                                    "input_index": 0
-                                },
-                                {
-                                    "value": 2
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "std::control::return",
-                            "id": 3,
-                            "parameters": [
-                                {
-                                    "nodeFunctionId": 2,
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "http::response::create",
-                            "id": 4,
-                            "nextNodeId": 5,
-                            "parameters": [
-                                {
-                                    "value": 200
-                                },
-                                {
-                                    "value": {}
-                                },
-                                {
-                                    "nodeFunctionId": 1,
-                                }
-                            ],
-                        },
-                        {
-                            "functionIdentifier": "rest::control::respond",
-                            "id": 5,
-                            "parameters": [
-                                {
-                                    "nodeFunctionId": 4,
-                                }
-                            ],
-                        }
-                    ],
-                    "startingNodeId": 1,
-                    "type": "REST",
-                    "settings": [
-                        {
-                            "value": "/webhook/map"
-                        },
-                        {
-                            "value": "GET"
-                        }
-                    ]
-                }).model_dump_json()
-            },
+            (
+                ChatCompletionUserMessageParam(role="user", content=fS.prompt),
+                {
+                    "role": "assistant",
+                    "content": fS.flow.model_dump_json()
+                },
+            )
+            for fS in prompt_few_shots
         ]
+
         few_shot_functions = self.function_store.find_all(
             group_identifier=str(request.project_id),
             identifiers=[
@@ -308,7 +181,8 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 usage=completion.usage.total_tokens
             )
         except Exception as e:
-            print(e)
+            import traceback
+            traceback.print_exc()
             context.abort(
                 code=grpc.StatusCode.INTERNAL,
                 details="An unexpected error occurred during flow generation."
