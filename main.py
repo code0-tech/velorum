@@ -34,7 +34,7 @@ if __name__ == '__main__':
     generate_pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
     info_pb2_grpc.add_InfoServiceServicer_to_server(InfoService(), server)
 
-    port = "0.0.0.0:50051"
+    port = os.getenv("HOST", "0.0.0.0") + ":" + os.getenv("PORT", "50051")
     server.add_insecure_port(port)
     print(f"Velorum GenerateService läuft auf {port}...")
 
