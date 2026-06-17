@@ -21,6 +21,7 @@ class FewShotsStore(Store):
             "identifier",
             "identifier"
         )
+        self._load_models_from_json()
 
     def _load_models_from_json(self):
         filepath = Path(__file__).parent.parent.parent / "few_shots.configuration.json"
