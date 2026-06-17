@@ -6,6 +6,9 @@ import time
 import grpc
 
 from src.interceptor.auth_interceptor import AuthInterceptor
+from src.logger import get_logger
+
+log = get_logger("velorum")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 venv_site_packages = os.path.join(current_dir, ".venv", "lib", "python3.12", "site-packages")
@@ -36,7 +39,7 @@ if __name__ == '__main__':
 
     port = os.getenv("HOST", "0.0.0.0") + ":" + os.getenv("PORT", "50051")
     server.add_insecure_port(port)
-    print(f"Velorum GenerateService läuft auf {port}...")
+    log.success(f"Velorum listening on {port}")  # type: ignore[attr-defined]
 
     SERVICE_NAMES = (
         generate_pb2.DESCRIPTOR.services_by_name['GenerateService'].full_name,
@@ -51,5 +54,5 @@ if __name__ == '__main__':
         while True:
             time.sleep(86400)
     except KeyboardInterrupt:
-        print("\nServer wird sauber heruntergefahren...")
+        log.info("Shutting down gracefully...")
         server.stop(0)

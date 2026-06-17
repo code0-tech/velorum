@@ -5,8 +5,11 @@ from typing import Any, List
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 
+from src.logger import get_logger
 from src.schema.few_shot_schema import FewShot
 from src.store.vector_store import Store
+
+log = get_logger("few_shots_store")
 
 
 class FewShotsStore(Store):
@@ -32,9 +35,12 @@ class FewShotsStore(Store):
             raw_data = [raw_data]
 
         for item in raw_data:
-            self.insert("global", FewShot(
-                **item
-            ))
+            shot = FewShot(**item)
+            self.insert("global", shot)
+            prompt_preview = shot.prompt[:50].replace("\n", " ") + ("…" if len(shot.prompt) > 50 else "")
+            log.debug(f"Loaded few-shot: \"{prompt_preview}\" ({len(shot.flow.nodes)} nodes)")
+
+        log.success(f"FewShotsStore ready — {len(raw_data)} example(s) loaded")  # type: ignore[attr-defined]
 
     def insert(self, group_identifier: str, payload: FewShot) -> None:
         super().insert(group_identifier, payload)

@@ -3,7 +3,12 @@ import os
 import grpc
 import jwt
 
+from src.logger import get_logger
+
 VALID_TOKEN = os.getenv('SECURITY_TOKEN', 'velorum-internal-communication-secret')
+
+log = get_logger("auth_interceptor")
+
 
 class AuthInterceptor(grpc.ServerInterceptor):
 
@@ -12,6 +17,7 @@ class AuthInterceptor(grpc.ServerInterceptor):
         auth_token = metadata.get('authorization', '')
 
         if not auth_token:
+            log.warning(f"Unauthorized request — no token | method={handler_call_details.method}")
             return self._abort_handler()
 
         try:
@@ -21,7 +27,7 @@ class AuthInterceptor(grpc.ServerInterceptor):
                 algorithms=['HS256']
             )
         except Exception as e:
-            print(e)
+            log.warning(f"Invalid token | method={handler_call_details.method} error={e}")
             return self._abort_handler()
 
         return continuation(handler_call_details)

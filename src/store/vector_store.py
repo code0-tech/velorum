@@ -7,6 +7,10 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, MatchAny, Filter, FieldCondition, MatchValue
 from sentence_transformers import SentenceTransformer
 
+from src.logger import get_logger
+
+log = get_logger("vector_store")
+
 
 class Store(ABC):
     def __init__(
@@ -72,9 +76,9 @@ class Store(ABC):
                     collection_name=self.collection_name,
                     points_selector=points_to_delete
                 )
-                print(f"[GC] {len(points_to_delete)} abgelaufene Einträge gelöscht")
+                log.debug(f"[GC] Removed {len(points_to_delete)} expired entries from '{self.collection_name}'")
         except Exception as e:
-            print(f"[GC Error] {e}")
+            log.error(f"[GC] Error in collection '{self.collection_name}': {e}")
 
     def _reset_time_to_live(self, group_identifier: str):
         items = self.get_all(group_identifier)

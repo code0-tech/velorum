@@ -7,6 +7,7 @@ from litellm.types.completion import ChatCompletionUserMessageParam
 from pydantic import ValidationError
 from qdrant_client import QdrantClient
 
+from src.logger import get_logger
 from src.mapper.data_type_mapper import map_to_data_type_schema
 from src.mapper.flow_mapper import map_to_grpc_flow, map_to_flow_schema
 from src.mapper.flow_types_mapper import map_to_flow_type_schema
@@ -21,10 +22,13 @@ from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
 from src.store.model_store import ModelStore
 
+log = get_logger("generate_endpoint")
+
 
 class GenerateService(pb2_grpc.GenerateServiceServicer):
 
     def __init__(self):
+        log.info("Initializing GenerateService...")
         self.memory_client = QdrantClient(":memory:")
         self.vector_model = load_vector_model()
         self.function_store = FunctionStore(self.memory_client, self.vector_model)
@@ -33,29 +37,35 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         self.model_store = ModelStore()
         self.prompt_orchestrator = PromptOrchestrator()
         self.flow_orchestrator = FlowOrchestrator()
-        pass
+        log.success("GenerateService ready")  # type: ignore[attr-defined]
 
     def Prompt(self, request: pb2.PromptRequest, context) -> pb2.FlowResponse:
+        prompt_preview = request.prompt[:60].replace("\n", " ") + ("…" if len(request.prompt) > 60 else "")
+        log.info(f"[Prompt] project={request.project_id} model={request.model_identifier} prompt=\"{prompt_preview}\"")
 
         if not request.project_id:
+            log.warning("[Prompt] Rejected — missing project_id")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'project_id' field cannot be empty. Please provide a valid project_id for flow generation."
             )
 
         if not request.prompt or not request.prompt.strip():
+            log.warning("[Prompt] Rejected — empty prompt")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'prompt' field cannot be empty. Please provide a valid prompt for flow generation."
             )
 
         if not request.model_identifier or not request.model_identifier.strip():
+            log.warning("[Prompt] Rejected — missing model_identifier")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'model_identifier' field cannot be empty. Please provide a valid model_identifier for flow generation."
             )
 
         if self.model_store.find(identifier=request.model_identifier) is None:
+            log.warning(f"[Prompt] Rejected — unknown model '{request.model_identifier}'")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
@@ -66,6 +76,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                     group_identifier=str(request.project_id)
                 )
         ) <= 0 and (len(request.functions) <= 0):
+            log.warning(f"[Prompt] Rejected — no functions for project={request.project_id}")
             context.abort(
                 code=grpc.StatusCode.ABORTED,
                 details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
@@ -76,6 +87,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                     group_identifier=str(request.project_id)
                 )
         ) <= 0 and (len(request.flow_types) <= 0):
+            log.warning(f"[Prompt] Rejected — no flow types for project={request.project_id}")
             context.abort(
                 code=grpc.StatusCode.ABORTED,
                 details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
@@ -128,6 +140,12 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             limit=2
         )
 
+        log.debug(
+            f"[Prompt] Context — functions={len(prompt_functions)} "
+            f"flow_types={len(prompt_flow_types)} "
+            f"few_shots={len(prompt_few_shots)}"
+        )
+
         few_shot_function_ids = list({
             node.function_identifier
             for fS in prompt_few_shots
@@ -138,6 +156,11 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             for fS in prompt_few_shots
             if fS.flow.type
         })
+
+        if few_shot_function_ids:
+            log.debug(f"[Prompt] Few-shot functions: {few_shot_function_ids}")
+        if few_shot_flow_type_ids:
+            log.debug(f"[Prompt] Few-shot flow types: {few_shot_flow_type_ids}")
 
         few_shot_functions = self.function_store.find_all(
             group_identifier=str(request.project_id),
@@ -157,13 +180,28 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
         ]
 
+        combined_functions = self.function_store.combine(prompt_functions, few_shot_functions)
+        combined_flow_types = self.flow_type_store.combine(prompt_flow_types, few_shots_flow_types)
+
+        log.debug(
+            f"[Prompt] Combined — functions={len(combined_functions)} "
+            f"flow_types={len(combined_flow_types)}"
+        )
+        log.info(f"[Prompt] Generating flow...")
+
+        t0 = time.time()
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
                 model=self.model_store.find(identifier=request.model_identifier),
                 prompt=request.prompt,
                 few_shots=few_shots,
-                available_functions=self.function_store.combine(prompt_functions, few_shot_functions),
-                available_flow_types=self.flow_type_store.combine(prompt_flow_types, few_shots_flow_types)
+                available_functions=combined_functions,
+                available_flow_types=combined_flow_types
+            )
+
+            elapsed = time.time() - t0
+            log.success(  # type: ignore[attr-defined]
+                f"[Prompt] Generated '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
             )
 
             current_time_ms = int(time.time() * 1000)
@@ -171,37 +209,41 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 flow=map_to_grpc_flow(
                     flow_postprocessing(
                         generated_flow,
-                        self.flow_type_store.combine(prompt_flow_types,
-                                                     few_shots_flow_types),
-                        self.function_store.combine(prompt_functions,
-                                                    few_shot_functions)
+                        combined_flow_types,
+                        combined_functions
                     )
                 ),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            elapsed = time.time() - t0
+            log.error(f"[Prompt] Generation failed after {elapsed:.2f}s: {e}", exc_info=True)
             context.abort(
                 code=grpc.StatusCode.INTERNAL,
                 details="An unexpected error occurred during flow generation."
             )
 
     def Flow(self, request: pb2.FlowRequest, context) -> pb2.FlowResponse:
+        prompt_preview = request.prompt[:60].replace("\n", " ") + ("…" if len(request.prompt) > 60 else "")
+        log.info(f"[Flow] project={request.project_id} model={request.model_identifier} prompt=\"{prompt_preview}\"")
+
         if not request.project_id:
+            log.warning("[Flow] Rejected — missing project_id")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'project_id' field cannot be empty. Please provide a valid project_id for flow generation."
             )
 
         if not request.prompt or not request.prompt.strip():
+            log.warning("[Flow] Rejected — empty prompt")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'prompt' field cannot be empty. Please provide a valid prompt for flow generation."
             )
 
         if not request.flow:
+            log.warning("[Flow] Rejected — missing flow")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'flow' field is invalid. Please provide a valid flow for flow generation."
@@ -210,18 +252,21 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         try:
             Flow.model_validate(map_to_flow_schema(request.flow))
         except ValidationError as e:
+            log.warning(f"[Flow] Rejected — invalid flow schema: {e}")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details=f"The 'flow' field is invalid. Please provide a valid flow for flow generation."
             )
 
         if not request.model_identifier or not request.model_identifier.strip():
+            log.warning("[Flow] Rejected — missing model_identifier")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="The 'model_identifier' field cannot be empty. Please provide a valid model_identifier for flow generation."
             )
 
         if self.model_store.find(identifier=request.model_identifier) is None:
+            log.warning(f"[Flow] Rejected — unknown model '{request.model_identifier}'")
             context.abort(
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
@@ -232,6 +277,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                     group_identifier=str(request.project_id)
                 )
         ) <= 0 and (len(request.functions) <= 0):
+            log.warning(f"[Flow] Rejected — no functions for project={request.project_id}")
             context.abort(
                 code=grpc.StatusCode.ABORTED,
                 details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
@@ -242,6 +288,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                     group_identifier=str(request.project_id)
                 )
         ) <= 0 and (len(request.flow_types) <= 0):
+            log.warning(f"[Flow] Rejected — no flow types for project={request.project_id}")
             context.abort(
                 code=grpc.StatusCode.ABORTED,
                 details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
@@ -294,6 +341,12 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             limit=2
         )
 
+        log.debug(
+            f"[Flow] Context — functions={len(prompt_functions)} "
+            f"flow_types={len(prompt_flow_types)} "
+            f"few_shots={len(flow_few_shots)}"
+        )
+
         flow_few_shot_function_ids = list({
             node.function_identifier
             for fS in flow_few_shots
@@ -304,6 +357,11 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             for fS in flow_few_shots
             if fS.flow.type
         })
+
+        if flow_few_shot_function_ids:
+            log.debug(f"[Flow] Few-shot functions: {flow_few_shot_function_ids}")
+        if flow_few_shot_flow_type_ids:
+            log.debug(f"[Flow] Few-shot flow types: {flow_few_shot_flow_type_ids}")
 
         flow_few_shot_functions = self.function_store.find_all(
             group_identifier=str(request.project_id),
@@ -323,14 +381,29 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
         ]
 
+        combined_functions = self.function_store.combine(prompt_functions, flow_few_shot_functions)
+        combined_flow_types = self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types)
+
+        log.debug(
+            f"[Flow] Combined — functions={len(combined_functions)} "
+            f"flow_types={len(combined_flow_types)}"
+        )
+        log.info(f"[Flow] Modifying flow...")
+
+        t0 = time.time()
         try:
             generated_flow, completion = self.flow_orchestrator.generate(
                 model=self.model_store.find(identifier=request.model_identifier),
                 prompt=request.prompt,
                 flow=map_to_flow_schema(request.flow),
                 few_shots=few_shots,
-                available_functions=self.function_store.combine(prompt_functions, flow_few_shot_functions),
-                available_flow_types=self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types)
+                available_functions=combined_functions,
+                available_flow_types=combined_flow_types
+            )
+
+            elapsed = time.time() - t0
+            log.success(  # type: ignore[attr-defined]
+                f"[Flow] Modified '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
             )
 
             current_time_ms = int(time.time() * 1000)
@@ -338,14 +411,16 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 flow=map_to_grpc_flow(
                     flow_postprocessing(
                         generated_flow,
-                        self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types),
-                        self.function_store.combine(prompt_functions, flow_few_shot_functions)
+                        combined_flow_types,
+                        combined_functions
                     )
                 ),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
         except Exception as e:
+            elapsed = time.time() - t0
+            log.error(f"[Flow] Generation failed after {elapsed:.2f}s: {e}", exc_info=True)
             context.abort(
                 code=grpc.StatusCode.INTERNAL,
                 details="An unexpected error occurred during flow generation."
