@@ -2,8 +2,11 @@ import json
 from pathlib import Path
 from typing import List
 
+from src.logger import get_logger
 from src.schema.model_schema import Model
 from src.store.data_store import Store
+
+log = get_logger("model_store")
 
 
 class ModelStore(Store):
@@ -24,9 +27,11 @@ class ModelStore(Store):
             raw_data = [raw_data]
 
         for item in raw_data:
-            self.insert(Model(
-                **item
-            ))
+            model = Model(**item)
+            self.insert(model)
+            log.debug(f"Loaded model: {model.identifier} (provider={model.provider})")
+
+        log.success(f"ModelStore ready — {len(raw_data)} model(s) loaded")  # type: ignore[attr-defined]
 
     def insert(self, data: Model):
         super().insert(data)
