@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Dict
 
 import instructor
 from litellm import completion
@@ -18,7 +18,7 @@ class PromptOrchestrator:
             self,
             model: Model,
             prompt: str,
-            few_shots: List[ChatCompletionUserMessageParam],
+            few_shots: List[Dict],
             available_flow_types: List[FlowType],
             available_functions: List[FunctionDefinition]
     ) -> tuple[Flow, Any]:

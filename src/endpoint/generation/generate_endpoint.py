@@ -128,34 +128,34 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             limit=2
         )
 
-        few_shots = [
-            (
-                ChatCompletionUserMessageParam(role="user", content=fS.prompt),
-                {
-                    "role": "assistant",
-                    "content": fS.flow.model_dump_json()
-                },
-            )
+        few_shot_function_ids = list({
+            node.function_identifier
             for fS in prompt_few_shots
-        ]
+            for node in fS.flow.nodes
+        })
+        few_shot_flow_type_ids = list({
+            fS.flow.type
+            for fS in prompt_few_shots
+            if fS.flow.type
+        })
 
         few_shot_functions = self.function_store.find_all(
             group_identifier=str(request.project_id),
-            identifiers=[
-                "std::control::value",
-                "http::response::create",
-                "rest::control::respond",
-                "std::list::map",
-                "std::control::return",
-                "std::number::multiply"
-            ]
+            identifiers=few_shot_function_ids
         )
         few_shots_flow_types = self.flow_type_store.find_all(
             group_identifier=str(request.project_id),
-            identifiers=[
-                "REST"
-            ]
+            identifiers=few_shot_flow_type_ids
         )
+
+        few_shots = [
+            msg
+            for fS in prompt_few_shots
+            for msg in (
+                ChatCompletionUserMessageParam(role="user", content=fS.prompt),
+                {"role": "assistant", "content": fS.flow.model_dump_json()},
+            )
+        ]
 
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
@@ -288,14 +288,49 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             limit=2
         )
 
+        flow_few_shots = self.few_shots_store.search(
+            group_identifier="global",
+            prompt=request.prompt,
+            limit=2
+        )
+
+        flow_few_shot_function_ids = list({
+            node.function_identifier
+            for fS in flow_few_shots
+            for node in fS.flow.nodes
+        })
+        flow_few_shot_flow_type_ids = list({
+            fS.flow.type
+            for fS in flow_few_shots
+            if fS.flow.type
+        })
+
+        flow_few_shot_functions = self.function_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=flow_few_shot_function_ids
+        )
+        flow_few_shots_flow_types = self.flow_type_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=flow_few_shot_flow_type_ids
+        )
+
+        few_shots = [
+            msg
+            for fS in flow_few_shots
+            for msg in (
+                ChatCompletionUserMessageParam(role="user", content=fS.prompt),
+                {"role": "assistant", "content": fS.flow.model_dump_json()},
+            )
+        ]
+
         try:
             generated_flow, completion = self.flow_orchestrator.generate(
                 model=self.model_store.find(identifier=request.model_identifier),
                 prompt=request.prompt,
                 flow=map_to_flow_schema(request.flow),
-                few_shots=[],
-                available_functions=prompt_functions,
-                available_flow_types=prompt_flow_types
+                few_shots=few_shots,
+                available_functions=self.function_store.combine(prompt_functions, flow_few_shot_functions),
+                available_flow_types=self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types)
             )
 
             current_time_ms = int(time.time() * 1000)
@@ -303,8 +338,8 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 flow=map_to_grpc_flow(
                     flow_postprocessing(
                         generated_flow,
-                        prompt_flow_types,
-                        prompt_functions
+                        self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types),
+                        self.function_store.combine(prompt_functions, flow_few_shot_functions)
                     )
                 ),
                 cached_until=current_time_ms + 300000,
