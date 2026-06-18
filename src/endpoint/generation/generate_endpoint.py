@@ -226,10 +226,11 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         )
         log.info(f"[Prompt] Generating flow...")
 
+        model = self.model_store.find(identifier=request.model_identifier)
         t0 = time.time()
         try:
             generated_flow, completion = self.prompt_orchestrator.generate(
-                model=self.model_store.find(identifier=request.model_identifier),
+                model=model,
                 prompt=request.prompt,
                 few_shots=few_shots,
                 available_functions=combined_functions,
@@ -237,8 +238,10 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
 
             elapsed = time.time() - t0
+            token_cost = model.token_cost if model.token_cost is not None else 1.0
+            usage = int(completion.usage.total_tokens * token_cost)
             log.success(  # type: ignore[attr-defined]
-                f"[Prompt] Generated '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
+                f"[Prompt] Generated '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens} cost_factor={token_cost} usage={usage}"
             )
             log.info(f"[Prompt] Generated flow: {generated_flow.model_dump_json()}")
 
@@ -253,7 +256,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             return pb2.FlowResponse(
                 flow=map_to_grpc_flow(final_flow),
                 cached_until=current_time_ms + 300000,
-                usage=completion.usage.total_tokens
+                usage=usage
             )
         except Exception as e:
             elapsed = time.time() - t0
@@ -493,10 +496,11 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         )
         log.info(f"[Flow] Modifying flow...")
 
+        model = self.model_store.find(identifier=request.model_identifier)
         t0 = time.time()
         try:
             generated_flow, completion = self.flow_orchestrator.generate(
-                model=self.model_store.find(identifier=request.model_identifier),
+                model=model,
                 prompt=request.prompt,
                 flow=map_to_flow_schema(request.flow),
                 few_shots=few_shots,
@@ -505,8 +509,10 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
 
             elapsed = time.time() - t0
+            token_cost = model.token_cost if model.token_cost is not None else 1.0
+            usage = int(completion.usage.total_tokens * token_cost)
             log.success(  # type: ignore[attr-defined]
-                f"[Flow] Modified '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
+                f"[Flow] Modified '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens} cost_factor={token_cost} usage={usage}"
             )
             log.info(f"[Flow] Generated flow: {generated_flow.model_dump_json()}")
 
@@ -521,7 +527,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             return pb2.FlowResponse(
                 flow=map_to_grpc_flow(final_flow),
                 cached_until=current_time_ms + 300000,
-                usage=completion.usage.total_tokens
+                usage=usage
             )
         except Exception as e:
             elapsed = time.time() - t0
