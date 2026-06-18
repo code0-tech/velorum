@@ -1,5 +1,6 @@
 import concurrent.futures
 import os
+import signal
 import sys
 import time
 
@@ -24,6 +25,7 @@ import tucana.generated.velorum.generate_pb2 as generate_pb2
 import tucana.generated.velorum.info_pb2_grpc as info_pb2_grpc
 import tucana.generated.velorum.info_pb2 as info_pb2
 from grpc_reflection.v1alpha import reflection
+from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 
 from src.endpoint.info.info_endpoint import InfoService
 from src.endpoint.generation.generate_endpoint import GenerateService
@@ -36,6 +38,12 @@ if __name__ == '__main__':
     )
     generate_pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
     info_pb2_grpc.add_InfoServiceServicer_to_server(InfoService(), server)
+
+
+    health_servicer = health.HealthServicer()
+    health_servicer.set('liveness', health_pb2.HealthCheckResponse.SERVING)
+    health_servicer.set('readiness', health_pb2.HealthCheckResponse.SERVING)
+    health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
 
     port = os.getenv("HOST", "0.0.0.0") + ":" + os.getenv("PORT", "50051")
     server.add_insecure_port(port)
@@ -50,9 +58,13 @@ if __name__ == '__main__':
 
     server.start()
 
-    try:
-        while True:
-            time.sleep(86400)
-    except KeyboardInterrupt:
+
+    def shutdown(signum, frame):
         log.info("Shutting down gracefully...")
-        server.stop(0)
+        health_servicer.enter_graceful_shutdown()
+        server.stop(5).wait()
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+
+    server.wait_for_termination()
