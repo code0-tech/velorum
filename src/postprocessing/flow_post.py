@@ -1,6 +1,7 @@
 from difflib import SequenceMatcher
 from typing import Dict, List, Optional, Set
 
+from src.logger import get_logger
 from src.schema.flow_schema import (
     Flow,
     LiteralValue,
@@ -12,6 +13,8 @@ from src.schema.flow_schema import (
 )
 from src.schema.flow_type_schema import FlowType
 from src.schema.function_schema import FunctionDefinition
+
+log = get_logger("flow_post")
 
 
 def _expected_parameter_count(function_definition: FunctionDefinition) -> int:
@@ -99,7 +102,13 @@ def _collect_reachable_node_ids(flow: Flow) -> Set[int]:
 def flow_postprocessing(flow: Flow, flow_types: List[FlowType], functions: List[FunctionDefinition]) -> Flow:
     _ = flow_types
 
+    log.debug(f"Postprocessing '{flow.name}' — {len(flow.nodes)} nodes")
+
     reachable_node_ids = _collect_reachable_node_ids(flow)
+
+    pruned = [n.id for n in flow.nodes if n.id not in reachable_node_ids]
+    if pruned:
+        log.debug(f"Pruning {len(pruned)} unreachable node(s): {pruned}")
 
     function_by_identifier: Dict[str, FunctionDefinition] = {
         fd.identifier: fd
@@ -128,8 +137,24 @@ def flow_postprocessing(flow: Flow, flow_types: List[FlowType], functions: List[
             new_identifier = function_definition.identifier or node.function_identifier
             expected_count = _expected_parameter_count(function_definition)
 
+        if new_identifier != node.function_identifier:
+            log.warning(
+                f"Node {node.id}: unknown function '{node.function_identifier}' "
+                f"→ corrected to '{new_identifier}'"
+            )
+
+        actual_count = len(node.parameters or [])
+        if actual_count != expected_count:
+            log.debug(
+                f"Node {node.id} ({new_identifier}): "
+                f"parameter count {actual_count} → {expected_count}"
+            )
+
         normalized_parameters = _normalize_parameters(node.parameters, expected_count)
         next_node_id = node.next_node_id if node.next_node_id in reachable_node_ids else None
+
+        if node.next_node_id is not None and next_node_id is None:
+            log.debug(f"Node {node.id}: next_node_id {node.next_node_id} is unreachable, cleared")
 
         processed_nodes.append(
             node.model_copy(
@@ -143,8 +168,14 @@ def flow_postprocessing(flow: Flow, flow_types: List[FlowType], functions: List[
 
     if flow.starting_node_id not in reachable_node_ids and processed_nodes:
         fallback_starting_node_id = processed_nodes[0].id
+        log.warning(
+            f"starting_node_id {flow.starting_node_id} is unreachable, "
+            f"falling back to node {fallback_starting_node_id}"
+        )
     else:
         fallback_starting_node_id = flow.starting_node_id
+
+    log.debug(f"Postprocessing done — {len(processed_nodes)} nodes retained")
 
     return flow.model_copy(
         update={

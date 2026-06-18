@@ -27,7 +27,7 @@ def map_to_grpc_literal_value(literal_value: LiteralValue) -> struct_pb2.Value:
     grpc_val = struct_pb2.Value()
 
     if literal_value.value is None:
-        grpc_val.null_value = struct_pb2.NullValue()
+        grpc_val.null_value = struct_pb2.NullValue.NULL_VALUE
     elif isinstance(literal_value.value, bool):
         grpc_val.bool_value = literal_value.value
     elif isinstance(literal_value.value, int):

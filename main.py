@@ -7,6 +7,9 @@ import time
 import grpc
 
 from src.interceptor.auth_interceptor import AuthInterceptor
+from src.logger import get_logger
+
+log = get_logger("velorum")
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 venv_site_packages = os.path.join(current_dir, ".venv", "lib", "python3.12", "site-packages")
@@ -36,14 +39,15 @@ if __name__ == '__main__':
     generate_pb2_grpc.add_GenerateServiceServicer_to_server(GenerateService(), server)
     info_pb2_grpc.add_InfoServiceServicer_to_server(InfoService(), server)
 
+
     health_servicer = health.HealthServicer()
     health_servicer.set('liveness', health_pb2.HealthCheckResponse.SERVING)
     health_servicer.set('readiness', health_pb2.HealthCheckResponse.SERVING)
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
 
-    port = "0.0.0.0:50051"
+    port = os.getenv("HOST", "0.0.0.0") + ":" + os.getenv("PORT", "50051")
     server.add_insecure_port(port)
-    print(f"Velorum GenerateService läuft auf {port}...")
+    log.success(f"Velorum listening on {port}")  # type: ignore[attr-defined]
 
     SERVICE_NAMES = (
         generate_pb2.DESCRIPTOR.services_by_name['GenerateService'].full_name,
@@ -54,8 +58,9 @@ if __name__ == '__main__':
 
     server.start()
 
+
     def shutdown(signum, frame):
-        print("\nServer wird sauber heruntergefahren...")
+        log.info("Shutting down gracefully...")
         health_servicer.enter_graceful_shutdown()
         server.stop(5).wait()
 

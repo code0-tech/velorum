@@ -1,13 +1,16 @@
-from typing import List, Any
+from typing import List, Any, Dict
 
 import instructor
 from litellm import completion
 from litellm.types.completion import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
 
+from src.logger import get_logger
 from src.schema.flow_schema import Flow
 from src.schema.flow_type_schema import FlowType
 from src.schema.function_schema import FunctionDefinition
 from src.schema.model_schema import Model
+
+log = get_logger("flow_orchestrator")
 
 
 class FlowOrchestrator:
@@ -19,12 +22,21 @@ class FlowOrchestrator:
             model: Model,
             prompt: str,
             flow: Flow,
-            few_shots: List[ChatCompletionUserMessageParam],
+            few_shots: List[Dict],
             available_flow_types: List[FlowType],
             available_functions: List[FunctionDefinition]
     ) -> tuple[Flow, Any]:
         flow_types_json = [f"{t.identifier}{t.signature}" for t in available_flow_types]
         functions_json = [f"{f.identifier}{f.signature}" for f in available_functions]
+
+        few_shot_pairs = len(few_shots) // 2
+        log.debug(
+            f"Building modification prompt — model={model.provider} "
+            f"flow='{flow.name}' nodes={len(flow.nodes)} "
+            f"functions={len(available_functions)} "
+            f"flow_types={len(available_flow_types)} "
+            f"few_shot_pairs={few_shot_pairs}"
+        )
 
         messages = [
             ChatCompletionSystemMessageParam(
@@ -51,7 +63,9 @@ class FlowOrchestrator:
             {"role": "assistant", "content": "{"}
         ]
 
-        flow, completion = self.client.chat.completions.create_with_completion(
+        log.debug(f"Sending {len(messages)} messages to {model.provider} (max_retries=5)")
+
+        flow, comp = self.client.chat.completions.create_with_completion(
             model=model.provider,
             response_model=Flow,
             api_key=model.auth,
@@ -66,4 +80,11 @@ class FlowOrchestrator:
             include_reasoning=False,
         )
 
-        return flow, completion
+        log.debug(
+            f"Completion received — "
+            f"prompt_tokens={comp.usage.prompt_tokens} "
+            f"completion_tokens={comp.usage.completion_tokens} "
+            f"total={comp.usage.total_tokens}"
+        )
+
+        return flow, comp
