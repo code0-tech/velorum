@@ -6,7 +6,7 @@ import time
 
 import grpc
 
-from src.edition import install as _install_edition
+from edition import install as _install_edition
 _install_edition()
 
 from src.interceptor.auth_interceptor import AuthInterceptor

@@ -13,7 +13,7 @@ _OVERRIDE_CHAINS = {
     "cloud": ["cloud", "ee"],
 }
 
-_PACKAGES_DIR = os.path.join(os.path.dirname(__file__), "packages")
+_PACKAGES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages")
 
 
 class _EditionFinder(importlib.abc.MetaPathFinder):
