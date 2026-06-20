@@ -5,7 +5,9 @@ from typing import List, Any
 from apscheduler.schedulers.background import BackgroundScheduler
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, MatchAny, Filter, FieldCondition, MatchValue
-from sentence_transformers import SentenceTransformer
+from model2vec import StaticModel
+
+from src.model import EMBEDDING_DIM
 
 from src.logger import get_logger
 
@@ -16,7 +18,7 @@ class Store(ABC):
     def __init__(
             self,
             client: QdrantClient,
-            model: SentenceTransformer,
+            model: StaticModel,
             collection_name: str,
             payload_identifier: str,
             group_identifier: str,
@@ -39,7 +41,7 @@ class Store(ABC):
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
-                    size=384,
+                    size=EMBEDDING_DIM,
                     distance=Distance.COSINE
                 ),
             )

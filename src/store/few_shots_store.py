@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 from typing import Any, List
 
+from model2vec import StaticModel
 from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
 
 from src.logger import get_logger
 from src.schema.few_shot_schema import FewShot
@@ -13,7 +13,7 @@ log = get_logger("few_shots_store")
 
 
 class FewShotsStore(Store):
-    def __init__(self, memory_client: QdrantClient, vector_model: SentenceTransformer):
+    def __init__(self, memory_client: QdrantClient, vector_model: StaticModel):
         super().__init__(
             memory_client,
             vector_model,
@@ -50,7 +50,7 @@ class FewShotsStore(Store):
         return FewShot.model_validate(payload)
 
     def search(self, group_identifier: str, prompt: str, limit=5) -> List[FewShot]:
-        return super().search(prompt, group_identifier, limit)
+        return super().search(group_identifier, prompt, limit)
 
     def find(self, group_identifier: str, identifier: str) -> FewShot | None:
         return super().find(group_identifier, identifier)
