@@ -87,13 +87,18 @@ class Store(ABC):
         if self.time_to_live is None:
             return
 
-        items = self.get_all(group_identifier)
-        current_time = time.time()
-
-        for item in items:
-            item_dict = item.model_dump() if hasattr(item, 'model_dump') else item
-            item_dict["created_at"] = current_time
-            self.insert(group_identifier, item_dict)
+        self.client.set_payload(
+            collection_name=self.collection_name,
+            payload={"created_at": time.time()},
+            points=Filter(
+                must=[
+                    FieldCondition(
+                        key=self.group_identifier,
+                        match=MatchValue(value=group_identifier)
+                    )
+                ]
+            ),
+        )
 
     @abstractmethod
     def validate(self, payload: Any) -> Any:
@@ -107,8 +112,11 @@ class Store(ABC):
         if "created_at" not in payload:
             payload["created_at"] = time.time()
 
-        payload_str = str(payload)
-        vector = self.model.encode(payload_str).tolist()
+        semantic_payload = {
+            k: v for k, v in payload.items()
+            if k not in ("created_at", self.group_identifier)
+        }
+        vector = self.model.encode(str(semantic_payload)).tolist()
 
         payload[self.group_identifier] = group_identifier
 
