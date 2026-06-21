@@ -25,16 +25,13 @@ class FewShotsStore(Store):
         self._load_models_from_json()
 
     def _load_models_from_json(self):
-        filepath = Path(__file__).parent.parent.parent / "few_shots.configuration.json"
+        project_root = Path(__file__).parent.parent.parent
+        internal_path = project_root / "few_shots.configuration.json"
+        external_path = project_root / "few_shots_external.configuration.json"
 
-        if not filepath.exists():
-            raise FileNotFoundError(f"File not found: {filepath}")
-
-        with open(filepath, 'r', encoding='utf-8') as f:
-            raw_data = json.load(f)
-
-        if not isinstance(raw_data, list):
-            raw_data = [raw_data]
+        raw_data: List[dict] = []
+        raw_data.extend(self._read_few_shots_file(internal_path, required=True))
+        raw_data.extend(self._read_few_shots_file(external_path, required=False))
 
         for item in raw_data:
             shot = FewShot(**item)
@@ -43,6 +40,39 @@ class FewShotsStore(Store):
             log.debug(f"Loaded few-shot: \"{prompt_preview}\" ({len(shot.flow.nodes)} nodes)")
 
         log.success(f"FewShotsStore ready — {len(raw_data)} example(s) loaded")  # type: ignore[attr-defined]
+
+    @staticmethod
+    def _read_few_shots_file(filepath: Path, required: bool) -> List[dict]:
+        if not filepath.exists():
+            if required:
+                raise FileNotFoundError(f"File not found: {filepath}")
+            log.info(f"No external few-shots file at {filepath} — skipping")
+            return []
+
+        if not filepath.is_file():
+            if required:
+                raise IsADirectoryError(f"Expected a file but found a directory: {filepath}")
+            log.warning(f"External few-shots path {filepath} is not a file — skipping")
+            return []
+
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+            if not content:
+                if required:
+                    raise ValueError(f"File is empty: {filepath}")
+                log.info(f"External few-shots file {filepath} is empty — skipping")
+                return []
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            if required:
+                raise
+            log.warning(f"External few-shots file {filepath} is not valid JSON ({e}) — skipping")
+            return []
+
+        if not isinstance(data, list):
+            data = [data]
+        return data
 
     def insert(self, group_identifier: str, payload: FewShot) -> None:
         super().insert(group_identifier, payload)
