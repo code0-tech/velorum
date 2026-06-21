@@ -19,7 +19,8 @@ class FewShotsStore(Store):
             vector_model,
             'few_shots',
             "identifier",
-            "identifier"
+            "identifier",
+            time_to_live=None,
         )
         self._load_models_from_json()
 

@@ -22,7 +22,7 @@ class Store(ABC):
             collection_name: str,
             payload_identifier: str,
             group_identifier: str,
-            time_to_live: int = 60 * 5
+            time_to_live: int | None = 60 * 5
 
     ):
         self.client = client
@@ -34,7 +34,8 @@ class Store(ABC):
         self._id_counter = 0
         self._scheduler = None
         self._setup_collection()
-        self._start_garbage_collector()
+        if self.time_to_live is not None:
+            self._start_garbage_collector()
 
     def _setup_collection(self):
         if not self.client.collection_exists(collection_name=self.collection_name):
@@ -83,6 +84,9 @@ class Store(ABC):
             log.error(f"[GC] Error in collection '{self.collection_name}': {e}")
 
     def _reset_time_to_live(self, group_identifier: str):
+        if self.time_to_live is None:
+            return
+
         items = self.get_all(group_identifier)
         current_time = time.time()
 
