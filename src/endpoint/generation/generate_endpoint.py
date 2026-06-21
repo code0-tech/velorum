@@ -71,28 +71,6 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
             )
 
-        if len(
-                self.function_store.get_all(
-                    group_identifier=str(request.project_id)
-                )
-        ) <= 0 and (len(request.functions) <= 0):
-            log.warning(f"[Prompt] Rejected — no functions for project={request.project_id}")
-            context.abort(
-                code=grpc.StatusCode.ABORTED,
-                details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
-            )
-
-        if len(
-                self.flow_type_store.get_all(
-                    group_identifier=str(request.project_id)
-                )
-        ) <= 0 and (len(request.flow_types) <= 0):
-            log.warning(f"[Prompt] Rejected — no flow types for project={request.project_id}")
-            context.abort(
-                code=grpc.StatusCode.ABORTED,
-                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
-            )
-
         functions = [
             map_to_function_schema(fn)
             for fn in request.functions
@@ -120,6 +98,30 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 group_identifier=str(request.project_id),
                 payload=ft,
                 data_types=data_types
+            )
+
+        stored_functions_count = len(self.function_store.get_all(group_identifier=str(request.project_id)))
+        stored_flow_types_count = len(self.flow_type_store.get_all(group_identifier=str(request.project_id)))
+        stored_few_shots_count = len(self.few_shots_store.get_all(group_identifier="global"))
+        log.info(
+            f"[Prompt] Store state — project={request.project_id} "
+            f"functions={stored_functions_count} "
+            f"flow_types={stored_flow_types_count} "
+            f"few_shots={stored_few_shots_count}"
+        )
+
+        if stored_functions_count <= 0:
+            log.warning(f"[Prompt] Rejected — no functions for project={request.project_id}")
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
+            )
+
+        if stored_flow_types_count <= 0:
+            log.warning(f"[Prompt] Rejected — no flow types for project={request.project_id}")
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
             )
 
         prompt_functions = self.function_store.search(
@@ -272,28 +274,6 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 details=f"The specified model_identifier '{request.model_identifier}' does not exist. Please provide a valid model_identifier for flow generation."
             )
 
-        if len(
-                self.function_store.get_all(
-                    group_identifier=str(request.project_id)
-                )
-        ) <= 0 and (len(request.functions) <= 0):
-            log.warning(f"[Flow] Rejected — no functions for project={request.project_id}")
-            context.abort(
-                code=grpc.StatusCode.ABORTED,
-                details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
-            )
-
-        if len(
-                self.flow_type_store.get_all(
-                    group_identifier=str(request.project_id)
-                )
-        ) <= 0 and (len(request.flow_types) <= 0):
-            log.warning(f"[Flow] Rejected — no flow types for project={request.project_id}")
-            context.abort(
-                code=grpc.StatusCode.ABORTED,
-                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
-            )
-
         functions = [
             map_to_function_schema(fn)
             for fn in request.functions
@@ -321,6 +301,30 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
                 group_identifier=str(request.project_id),
                 payload=ft,
                 data_types=data_types
+            )
+
+        stored_functions_count = len(self.function_store.get_all(group_identifier=str(request.project_id)))
+        stored_flow_types_count = len(self.flow_type_store.get_all(group_identifier=str(request.project_id)))
+        stored_few_shots_count = len(self.few_shots_store.get_all(group_identifier="global"))
+        log.info(
+            f"[Flow] Store state — project={request.project_id} "
+            f"functions={stored_functions_count} "
+            f"flow_types={stored_flow_types_count} "
+            f"few_shots={stored_few_shots_count}"
+        )
+
+        if stored_functions_count <= 0:
+            log.warning(f"[Flow] Rejected — no functions for project={request.project_id}")
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No functions found for the given project_id. Please add functions before requesting a prompt generation."
+            )
+
+        if stored_flow_types_count <= 0:
+            log.warning(f"[Flow] Rejected — no flow types for project={request.project_id}")
+            context.abort(
+                code=grpc.StatusCode.ABORTED,
+                details="No flow types found for the given project_id. Please add flow_types before requesting a prompt generation."
             )
 
         prompt_functions = self.function_store.search(

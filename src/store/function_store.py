@@ -1,8 +1,8 @@
 import re
 from typing import List, Any
 
+from model2vec import StaticModel
 from qdrant_client import QdrantClient
-from sentence_transformers import SentenceTransformer
 
 from src.schema.data_type_schema import DataType
 from src.schema.function_schema import FunctionDefinition
@@ -81,7 +81,7 @@ def resolve_ts_signature(signature, type_defs):
 
 
 class FunctionStore(Store):
-    def __init__(self, memory_client: QdrantClient, vector_model: SentenceTransformer):
+    def __init__(self, memory_client: QdrantClient, vector_model: StaticModel):
         super().__init__(
             memory_client,
             vector_model,
@@ -105,7 +105,7 @@ class FunctionStore(Store):
         return FunctionDefinition.model_validate(payload)
 
     def search(self, group_identifier: str, prompt: str, limit=5) -> List[FunctionDefinition]:
-        return super().search(prompt, group_identifier, limit)
+        return super().search(group_identifier, prompt, limit)
 
     def find(self, group_identifier: str, identifier: str) -> FunctionDefinition | None:
         return super().find(group_identifier, identifier)

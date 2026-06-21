@@ -1,7 +1,8 @@
-from sentence_transformers import SentenceTransformer
+from model2vec import StaticModel
 
-MODEL_NAME = 'all-MiniLM-L6-v2'
+MODEL_NAME = 'minishlab/potion-base-8M'
+EMBEDDING_DIM = 256
 
 
-def load_vector_model() -> SentenceTransformer:
-    return SentenceTransformer(MODEL_NAME)
+def load_vector_model() -> StaticModel:
+    return StaticModel.from_pretrained(MODEL_NAME)

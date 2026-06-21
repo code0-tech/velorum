@@ -5,7 +5,9 @@ from typing import List, Any
 from apscheduler.schedulers.background import BackgroundScheduler
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, MatchAny, Filter, FieldCondition, MatchValue
-from sentence_transformers import SentenceTransformer
+from model2vec import StaticModel
+
+from src.model import EMBEDDING_DIM
 
 from src.logger import get_logger
 
@@ -16,11 +18,11 @@ class Store(ABC):
     def __init__(
             self,
             client: QdrantClient,
-            model: SentenceTransformer,
+            model: StaticModel,
             collection_name: str,
             payload_identifier: str,
             group_identifier: str,
-            time_to_live: int = 60 * 5
+            time_to_live: int | None = 60 * 5
 
     ):
         self.client = client
@@ -32,14 +34,15 @@ class Store(ABC):
         self._id_counter = 0
         self._scheduler = None
         self._setup_collection()
-        self._start_garbage_collector()
+        if self.time_to_live is not None:
+            self._start_garbage_collector()
 
     def _setup_collection(self):
         if not self.client.collection_exists(collection_name=self.collection_name):
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
-                    size=384,
+                    size=EMBEDDING_DIM,
                     distance=Distance.COSINE
                 ),
             )
@@ -81,13 +84,21 @@ class Store(ABC):
             log.error(f"[GC] Error in collection '{self.collection_name}': {e}")
 
     def _reset_time_to_live(self, group_identifier: str):
-        items = self.get_all(group_identifier)
-        current_time = time.time()
+        if self.time_to_live is None:
+            return
 
-        for item in items:
-            item_dict = item.model_dump() if hasattr(item, 'model_dump') else item
-            item_dict["created_at"] = current_time
-            self.insert(group_identifier, item_dict)
+        self.client.set_payload(
+            collection_name=self.collection_name,
+            payload={"created_at": time.time()},
+            points=Filter(
+                must=[
+                    FieldCondition(
+                        key=self.group_identifier,
+                        match=MatchValue(value=group_identifier)
+                    )
+                ]
+            ),
+        )
 
     @abstractmethod
     def validate(self, payload: Any) -> Any:
@@ -101,8 +112,11 @@ class Store(ABC):
         if "created_at" not in payload:
             payload["created_at"] = time.time()
 
-        payload_str = str(payload)
-        vector = self.model.encode(payload_str).tolist()
+        semantic_payload = {
+            k: v for k, v in payload.items()
+            if k not in ("created_at", self.group_identifier)
+        }
+        vector = self.model.encode(str(semantic_payload)).tolist()
 
         payload[self.group_identifier] = group_identifier
 
