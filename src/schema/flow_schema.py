@@ -1,6 +1,6 @@
 from typing import Union, Optional, List, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ReferencePath(BaseModel):
@@ -57,7 +57,14 @@ class Flow(BaseModel):
     name: str
     nodes: List[NodeFunction]
     settings: Optional[List[FlowSetting]] = None
-    starting_node_id: int = Field(alias="startingNodeId")
+    starting_node_id: Optional[int] = Field(None, alias="startingNodeId")
     type: str
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("starting_node_id", mode="before")
+    @classmethod
+    def _empty_string_to_none(cls, value):
+        if isinstance(value, str) and value.strip() == "":
+            return None
+        return value
