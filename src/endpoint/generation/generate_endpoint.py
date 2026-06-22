@@ -205,16 +205,18 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             log.success(  # type: ignore[attr-defined]
                 f"[Prompt] Generated '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
             )
+            log.info(f"[Prompt] Generated flow: {generated_flow.model_dump_json()}")
+
+            final_flow = flow_postprocessing(
+                generated_flow,
+                combined_flow_types,
+                combined_functions
+            )
+            log.info(f"[Prompt] Post-processed flow: {final_flow.model_dump_json()}")
 
             current_time_ms = int(time.time() * 1000)
             return pb2.FlowResponse(
-                flow=map_to_grpc_flow(
-                    flow_postprocessing(
-                        generated_flow,
-                        combined_flow_types,
-                        combined_functions
-                    )
-                ),
+                flow=map_to_grpc_flow(final_flow),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
@@ -252,7 +254,8 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
 
         try:
-            Flow.model_validate(map_to_flow_schema(request.flow))
+            incoming_flow = Flow.model_validate(map_to_flow_schema(request.flow))
+            log.info(f"[Flow] Incoming flow: {incoming_flow.model_dump_json()}")
         except ValidationError as e:
             log.warning(f"[Flow] Rejected — invalid flow schema: {e}")
             context.abort(
@@ -409,16 +412,18 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             log.success(  # type: ignore[attr-defined]
                 f"[Flow] Modified '{generated_flow.name}' in {elapsed:.2f}s | tokens={completion.usage.total_tokens}"
             )
+            log.info(f"[Flow] Generated flow: {generated_flow.model_dump_json()}")
+
+            final_flow = flow_postprocessing(
+                generated_flow,
+                combined_flow_types,
+                combined_functions
+            )
+            log.info(f"[Flow] Post-processed flow: {final_flow.model_dump_json()}")
 
             current_time_ms = int(time.time() * 1000)
             return pb2.FlowResponse(
-                flow=map_to_grpc_flow(
-                    flow_postprocessing(
-                        generated_flow,
-                        combined_flow_types,
-                        combined_functions
-                    )
-                ),
+                flow=map_to_grpc_flow(final_flow),
                 cached_until=current_time_ms + 300000,
                 usage=completion.usage.total_tokens
             )
