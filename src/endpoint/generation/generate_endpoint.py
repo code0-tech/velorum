@@ -379,6 +379,26 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             identifiers=flow_few_shot_flow_type_ids
         )
 
+        incoming_flow_function_ids = list({
+            node.function_identifier
+            for node in incoming_flow.nodes
+        })
+        incoming_flow_flow_type_ids = [incoming_flow.type] if incoming_flow.type else []
+
+        if incoming_flow_function_ids:
+            log.debug(f"[Flow] Incoming-flow functions: {incoming_flow_function_ids}")
+        if incoming_flow_flow_type_ids:
+            log.debug(f"[Flow] Incoming-flow flow types: {incoming_flow_flow_type_ids}")
+
+        incoming_flow_functions = self.function_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=incoming_flow_function_ids
+        )
+        incoming_flow_flow_types = self.flow_type_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=incoming_flow_flow_type_ids
+        )
+
         few_shots = [
             msg
             for fS in flow_few_shots
@@ -388,8 +408,14 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             )
         ]
 
-        combined_functions = self.function_store.combine(prompt_functions, flow_few_shot_functions)
-        combined_flow_types = self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types)
+        combined_functions = self.function_store.combine(
+            self.function_store.combine(prompt_functions, flow_few_shot_functions),
+            incoming_flow_functions
+        )
+        combined_flow_types = self.flow_type_store.combine(
+            self.flow_type_store.combine(prompt_flow_types, flow_few_shots_flow_types),
+            incoming_flow_flow_types
+        )
 
         log.debug(
             f"[Flow] Combined — functions={len(combined_functions)} "
