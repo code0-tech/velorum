@@ -15,5 +15,5 @@ dependencies = [
     "pydantic==2.12.5",
     "qdrant-client>=1.16.1",
     "model2vec>=0.3.0",
-    "tucana==0.0.72",
+    "tucana==0.0.75",
 ]
