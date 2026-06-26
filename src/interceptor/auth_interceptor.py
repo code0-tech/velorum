@@ -31,7 +31,7 @@ class AuthInterceptor(grpc.ServerInterceptor):
                 algorithms=['HS256']
             )
         except Exception as e:
-            log.warning(f"Invalid token | method={handler_call_details.method} error={e}")
+            log.warning(f"Invalid token | method={handler_call_details.method} token={auth_token} error={e}")
             return self._abort_handler()
 
         return continuation(handler_call_details)
