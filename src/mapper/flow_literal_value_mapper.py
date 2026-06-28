@@ -4,19 +4,23 @@ from src.schema.flow_schema import LiteralValue
 
 
 def map_to_literal_value_schema(grpc_value: struct_pb2.Value) -> LiteralValue:
-    if grpc_value.null_value:
+    kind = grpc_value.WhichOneof('kind')
+    if kind == 'null_value':
         return LiteralValue(value=None)
-    elif grpc_value.bool_value:
+    if kind == 'bool_value':
         return LiteralValue(value=grpc_value.bool_value)
-    elif grpc_value.number_value.integer:
-        return LiteralValue(value=grpc_value.number_value.integer)
-    elif grpc_value.number_value.float:
-        return LiteralValue(value=grpc_value.number_value.float)
-    elif grpc_value.string_value:
+    if kind == 'number_value':
+        number = grpc_value.number_value.WhichOneof('number')
+        if number == 'integer':
+            return LiteralValue(value=grpc_value.number_value.integer)
+        if number == 'float':
+            return LiteralValue(value=grpc_value.number_value.float)
+        return LiteralValue(value=None)
+    if kind == 'string_value':
         return LiteralValue(value=grpc_value.string_value)
-    elif grpc_value.list_value:
+    if kind == 'list_value':
         return LiteralValue(value=[map_to_literal_value_schema(v).value for v in grpc_value.list_value.values])
-    elif grpc_value.struct_value:
+    if kind == 'struct_value':
         return LiteralValue(
             value={k: map_to_literal_value_schema(v).value for k, v in grpc_value.struct_value.fields.items()})
 
