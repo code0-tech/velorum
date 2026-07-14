@@ -1,15 +1,6 @@
 import re
 from typing import List
 
-from src.logger import get_logger
-
-log = get_logger("ts_resolver")
-
-# Sicherheitsgrenzen gegen Endlosschleifen bei rekursiven / nicht-konvergierenden
-# Typdefinitionen (z.B. `type A = B` / `type B = A` oder selbst-referenzierende Typen).
-MAX_RESOLVE_DEPTH = 64
-MAX_RESOLVE_ITERATIONS = 100
-
 
 def resolve_ts_signature(signature: str, type_defs: List[str]) -> str:
     # 1. Typ-Datenbank aufbauen
@@ -43,14 +34,9 @@ def resolve_ts_signature(signature: str, type_defs: List[str]) -> str:
         parts.append("".join(current).strip())
         return [p for p in parts if p]
 
-    def resolve(target, stack, depth):
-        # Tiefen-Sicherung gegen tiefe/pathologische Expansionen
-        if depth > MAX_RESOLVE_DEPTH:
-            log.warning(
-                f"[resolve] Max depth ({MAX_RESOLVE_DEPTH}) reached — "
-                f"returning best effort for '{target[:80]}'"
-            )
-            return target
+    def resolve(target, stack, warned_cycles=None):
+        if warned_cycles is None:
+            warned_cycles = set()
 
         # Finde den am weitesten links stehenden Typ-Namen, der evtl. <...> folgt
         # Wir suchen nach Wörtern, die nicht gefolgt werden von ( oder : (um Funktionsnamen zu schützen)
@@ -63,18 +49,21 @@ def resolve_ts_signature(signature: str, type_defs: List[str]) -> str:
             # Zyklus-Schutz: Typ verweist entlang des aktuellen Pfades auf sich selbst.
             # Wir lassen ihn unaufgelöst stehen, statt endlos weiter zu expandieren.
             if name in type_db and name in stack:
-                log.warning(
-                    f"[resolve] Cyclic type reference detected for '{name}' — leaving unresolved"
-                )
+                if name not in warned_cycles:
+                    warned_cycles.add(name)
                 if args_raw:
-                    resolved_args = ", ".join([resolve(a, stack, depth + 1) for a in smart_split(args_raw)])
+                    resolved_args = ", ".join(
+                        [resolve(a, stack, warned_cycles) for a in smart_split(args_raw)]
+                    )
                     return f"{name}<{resolved_args}>"
                 return name
 
             # Wenn der Name nicht in der DB ist, ist es ein Primitiv oder ein nacktes Generic
             if name not in type_db:
                 if args_raw:
-                    resolved_args = ", ".join([resolve(a, stack, depth + 1) for a in smart_split(args_raw)])
+                    resolved_args = ", ".join(
+                        [resolve(a, stack, warned_cycles) for a in smart_split(args_raw)]
+                    )
                     return f"{name}<{resolved_args}>"
                 return name
 
@@ -90,21 +79,8 @@ def resolve_ts_signature(signature: str, type_defs: List[str]) -> str:
 
             # Rekursiv weiter auflösen, falls der Body selbst Custom Types enthält.
             # Der aktuelle Typ-Name kommt auf den Pfad-Stack, um Zyklen zu erkennen.
-            return resolve(resolved_body, stack | {name}, depth + 1)
+            return resolve(resolved_body, stack | {name}, warned_cycles)
 
-        # Wir wenden die Ersetzung so lange an, bis sich nichts mehr ändert
-        previous = ""
-        iterations = 0
-        while previous != target:
-            if iterations >= MAX_RESOLVE_ITERATIONS:
-                log.warning(
-                    f"[resolve] Max iterations ({MAX_RESOLVE_ITERATIONS}) reached — "
-                    f"returning best effort for '{target[:80]}'"
-                )
-                break
-            previous = target
-            target = re.sub(pattern, replacement, target)
-            iterations += 1
-        return target
+        return re.sub(pattern, replacement, target)
 
-    return resolve(signature, frozenset(), 0)
+    return resolve(signature, frozenset())
