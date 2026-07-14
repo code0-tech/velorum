@@ -86,19 +86,31 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             for ft in request.flow_types
         ]
 
-        for fn in functions:
-            self.function_store.insert_from_definition(
-                group_identifier=str(request.project_id),
-                payload=fn,
-                data_types=data_types
-            )
+        log.info(
+            f"[Prompt] Storing definitions — project={request.project_id} "
+            f"functions={len(functions)} flow_types={len(flow_types)} data_types={len(data_types)}"
+        )
+        try:
+            for fn in functions:
+                self.function_store.insert_from_definition(
+                    group_identifier=str(request.project_id),
+                    payload=fn,
+                    data_types=data_types
+                )
 
-        for ft in flow_types:
-            self.flow_type_store.insert_from_definition(
-                group_identifier=str(request.project_id),
-                payload=ft,
-                data_types=data_types
+            for ft in flow_types:
+                self.flow_type_store.insert_from_definition(
+                    group_identifier=str(request.project_id),
+                    payload=ft,
+                    data_types=data_types
+                )
+        except Exception as e:
+            log.error(f"[Prompt] Failed to store definitions: {e}", exc_info=True)
+            context.abort(
+                code=grpc.StatusCode.INTERNAL,
+                details="An unexpected error occurred while storing function/flow_type definitions."
             )
+        log.info(f"[Prompt] Stored definitions successfully")
 
         stored_functions_count = len(self.function_store.get_all(group_identifier=str(request.project_id)))
         stored_flow_types_count = len(self.flow_type_store.get_all(group_identifier=str(request.project_id)))
@@ -292,19 +304,31 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             for ft in request.flow_types
         ]
 
-        for fn in functions:
-            self.function_store.insert_from_definition(
-                group_identifier=str(request.project_id),
-                payload=fn,
-                data_types=data_types
-            )
+        log.info(
+            f"[Flow] Storing definitions — project={request.project_id} "
+            f"functions={len(functions)} flow_types={len(flow_types)} data_types={len(data_types)}"
+        )
+        try:
+            for fn in functions:
+                self.function_store.insert_from_definition(
+                    group_identifier=str(request.project_id),
+                    payload=fn,
+                    data_types=data_types
+                )
 
-        for ft in flow_types:
-            self.flow_type_store.insert_from_definition(
-                group_identifier=str(request.project_id),
-                payload=ft,
-                data_types=data_types
+            for ft in flow_types:
+                self.flow_type_store.insert_from_definition(
+                    group_identifier=str(request.project_id),
+                    payload=ft,
+                    data_types=data_types
+                )
+        except Exception as e:
+            log.error(f"[Flow] Failed to store definitions: {e}", exc_info=True)
+            context.abort(
+                code=grpc.StatusCode.INTERNAL,
+                details="An unexpected error occurred while storing function/flow_type definitions."
             )
+        log.info(f"[Flow] Stored definitions successfully")
 
         stored_functions_count = len(self.function_store.get_all(group_identifier=str(request.project_id)))
         stored_flow_types_count = len(self.flow_type_store.get_all(group_identifier=str(request.project_id)))
