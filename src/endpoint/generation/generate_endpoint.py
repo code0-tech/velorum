@@ -160,6 +160,29 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             f"few_shots={len(prompt_few_shots)}"
         )
 
+        # Only keep few-shots whose referenced functions are ALL available in the
+        # project's function store — otherwise the example would teach the model to
+        # use functions that do not exist for this project.
+        candidate_function_ids = list({
+            node.function_identifier
+            for fS in prompt_few_shots
+            for node in fS.flow.nodes
+        })
+        available_function_definitions = self.function_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=candidate_function_ids
+        )
+        available_function_ids = {fn.identifier for fn in available_function_definitions}
+
+        filtered_few_shots = [
+            fS for fS in prompt_few_shots
+            if all(node.function_identifier in available_function_ids for node in fS.flow.nodes)
+        ]
+        dropped_few_shots = len(prompt_few_shots) - len(filtered_few_shots)
+        if dropped_few_shots:
+            log.debug(f"[Prompt] Dropped {dropped_few_shots} few-shot(s) referencing unavailable functions")
+        prompt_few_shots = filtered_few_shots
+
         few_shot_function_ids = list({
             node.function_identifier
             for fS in prompt_few_shots
@@ -176,10 +199,10 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         if few_shot_flow_type_ids:
             log.debug(f"[Prompt] Few-shot flow types: {few_shot_flow_type_ids}")
 
-        few_shot_functions = self.function_store.find_all(
-            group_identifier=str(request.project_id),
-            identifiers=few_shot_function_ids
-        )
+        few_shot_functions = [
+            fn for fn in available_function_definitions
+            if fn.identifier in few_shot_function_ids
+        ]
         few_shots_flow_types = self.flow_type_store.find_all(
             group_identifier=str(request.project_id),
             identifiers=few_shot_flow_type_ids
@@ -378,6 +401,29 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             f"few_shots={len(flow_few_shots)}"
         )
 
+        # Only keep few-shots whose referenced functions are ALL available in the
+        # project's function store — otherwise the example would teach the model to
+        # use functions that do not exist for this project.
+        flow_candidate_function_ids = list({
+            node.function_identifier
+            for fS in flow_few_shots
+            for node in fS.flow.nodes
+        })
+        flow_available_function_definitions = self.function_store.find_all(
+            group_identifier=str(request.project_id),
+            identifiers=flow_candidate_function_ids
+        )
+        flow_available_function_ids = {fn.identifier for fn in flow_available_function_definitions}
+
+        filtered_flow_few_shots = [
+            fS for fS in flow_few_shots
+            if all(node.function_identifier in flow_available_function_ids for node in fS.flow.nodes)
+        ]
+        dropped_flow_few_shots = len(flow_few_shots) - len(filtered_flow_few_shots)
+        if dropped_flow_few_shots:
+            log.debug(f"[Flow] Dropped {dropped_flow_few_shots} few-shot(s) referencing unavailable functions")
+        flow_few_shots = filtered_flow_few_shots
+
         flow_few_shot_function_ids = list({
             node.function_identifier
             for fS in flow_few_shots
@@ -394,10 +440,10 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         if flow_few_shot_flow_type_ids:
             log.debug(f"[Flow] Few-shot flow types: {flow_few_shot_flow_type_ids}")
 
-        flow_few_shot_functions = self.function_store.find_all(
-            group_identifier=str(request.project_id),
-            identifiers=flow_few_shot_function_ids
-        )
+        flow_few_shot_functions = [
+            fn for fn in flow_available_function_definitions
+            if fn.identifier in flow_few_shot_function_ids
+        ]
         flow_few_shots_flow_types = self.flow_type_store.find_all(
             group_identifier=str(request.project_id),
             identifiers=flow_few_shot_flow_type_ids
