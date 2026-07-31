@@ -9,6 +9,9 @@ import grpc
 from edition import install as _install_edition
 _install_edition()
 
+import litellm
+litellm.suppress_debug_info = True
+
 from src.interceptor.auth_interceptor import AuthInterceptor
 from src.logger import get_logger
 
