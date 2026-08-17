@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set
 from src.logger import get_logger
 from src.schema.flow_schema import (
     Flow,
+    FlowSetting,
     LiteralValue,
     NodeFunction,
     NodeParameterValue,
@@ -11,7 +12,7 @@ from src.schema.flow_schema import (
     SubFlowReferenceValue,
     SubFlowValue,
 )
-from src.schema.flow_type_schema import FlowType
+from src.schema.flow_type_schema import FlowType, FlowTypeSetting
 from src.schema.function_schema import FunctionDefinition
 
 log = get_logger("flow_post")
@@ -99,10 +100,80 @@ def _collect_reachable_node_ids(flow: Flow) -> Set[int]:
     return reachable_node_ids
 
 
-def flow_postprocessing(flow: Flow, flow_types: List[FlowType], functions: List[FunctionDefinition]) -> Flow:
-    _ = flow_types
+def _default_for(setting: FlowTypeSetting) -> object:
+    """Fallback value for a setting: its default value if one was provided, else None."""
+    return setting.default_value if setting.has_default_value else None
 
+
+def _reconcile_settings(
+    flow: Flow,
+    flow_types: List[FlowType],
+    original_flow: Optional[Flow],
+) -> List[FlowSetting]:
+    """Align the flow's settings with the definition of its flow type.
+
+    Guarantees the resulting settings list has exactly one entry per flow type
+    setting, in the same order. Hidden settings are never taken from the model's
+    output — the model may generate a value, but it must be overwritten:
+
+    * prompt -> Flow (no ``original_flow``): a hidden setting becomes its default
+      value if one is defined, otherwise null.
+    * Flow -> Flow (``original_flow`` given): a hidden setting keeps the value the
+      incoming flow already had (even if that value is null); if the incoming flow
+      is missing that setting, it falls back to the default value or null.
+
+    Visible settings keep the generated value, falling back to the incoming flow's
+    value and finally to the default when the model omitted them.
+    """
+    flow_type = next(
+        (ft for ft in flow_types if ft.identifier and ft.identifier == flow.type),
+        None,
+    )
+    if flow_type is None or flow_type.flow_type_settings is None:
+        log.debug(f"No flow type '{flow.type}' with settings found — leaving settings untouched")
+        return list(flow.settings or [])
+
+    setting_definitions = flow_type.flow_type_settings
+    generated = list(flow.settings or [])
+    original = list(original_flow.settings) if original_flow and original_flow.settings else []
+
+    reconciled: List[FlowSetting] = []
+    for index, definition in enumerate(setting_definitions):
+        has_generated = index < len(generated)
+        has_original = index < len(original)
+
+        if definition.hidden:
+            if original_flow is not None:
+                value = original[index].value if has_original else _default_for(definition)
+            else:
+                value = _default_for(definition)
+        else:
+            if has_generated:
+                value = generated[index].value
+            elif has_original:
+                value = original[index].value
+            else:
+                value = _default_for(definition)
+
+        reconciled.append(FlowSetting(value=value))
+
+    if len(generated) != len(setting_definitions):
+        log.debug(
+            f"Flow type '{flow.type}': setting count {len(generated)} → {len(setting_definitions)}"
+        )
+
+    return reconciled
+
+
+def flow_postprocessing(
+    flow: Flow,
+    flow_types: List[FlowType],
+    functions: List[FunctionDefinition],
+    original_flow: Optional[Flow] = None,
+) -> Flow:
     log.debug(f"Postprocessing '{flow.name}' — {len(flow.nodes)} nodes")
+
+    reconciled_settings = _reconcile_settings(flow, flow_types, original_flow)
 
     reachable_node_ids = _collect_reachable_node_ids(flow)
 
@@ -181,5 +252,6 @@ def flow_postprocessing(flow: Flow, flow_types: List[FlowType], functions: List[
         update={
             "nodes": processed_nodes,
             "starting_node_id": fallback_starting_node_id,
+            "settings": reconciled_settings,
         }
     )

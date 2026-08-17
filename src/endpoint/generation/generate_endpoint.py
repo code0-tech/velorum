@@ -519,7 +519,8 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
             final_flow = flow_postprocessing(
                 generated_flow,
                 combined_flow_types,
-                combined_functions
+                combined_functions,
+                original_flow=incoming_flow
             )
             log.info(f"[Flow] Post-processed flow: {final_flow.model_dump_json()}")
 

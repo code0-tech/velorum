@@ -1,5 +1,6 @@
 import tucana.generated.shared.flow_type_pb2 as flow_type_pb2
 
+from src.mapper.flow_literal_value_mapper import map_to_literal_value_schema
 from src.schema.flow_type_schema import FlowType, FlowTypeSetting
 
 
@@ -12,8 +13,13 @@ def map_to_flow_type_schema(grpc_value: flow_type_pb2.FlowType) -> FlowType:
         aliases=grpc_value.alias[0].content if grpc_value.alias else "",
         flowTypeSettings=[
             FlowTypeSetting(
+                identifier=setting.identifier,
                 names=setting.name[0].content if setting.name else "",
                 descriptions=setting.description[0].content if setting.name else "",
+                hidden=setting.hidden,
+                optional=setting.optional,
+                defaultValue=map_to_literal_value_schema(setting.default_value).value,
+                hasDefaultValue=setting.HasField("default_value"),
             )
             for setting in grpc_value.settings
         ]
