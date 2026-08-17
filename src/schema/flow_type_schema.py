@@ -4,7 +4,14 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class FlowTypeSetting(BaseModel):
+    identifier: Optional[str] = Field(None)
     default_value: Optional[Any] = Field(None, alias="defaultValue")
+    # Whether a defaultValue was provided at all. Needed because a default value
+    # may legitimately be null, which is indistinguishable from "no default" by
+    # inspecting default_value alone.
+    has_default_value: bool = Field(False, alias="hasDefaultValue")
+    hidden: bool = Field(False)
+    optional: bool = Field(False)
     descriptions: Optional[str] = Field(None)
     names: Optional[str] = Field(None)
 
