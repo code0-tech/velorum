@@ -1,0 +1,66 @@
+[
+  {
+    "name": "user_email_webhook",
+    "prompt": "Erstelle einen REST Webhook flow, welcher ein user objekt entgegennimmt und anschließend die mail als response zurückgibt.",
+    "expected_flow": {
+      "name": "User email webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 200 },
+            { "value": {} },
+            {
+              "nodeFunctionId": 0,
+              "referencePath": [{ "path": "email" }]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "email": "", "username": "" } },
+        { "value": "/webhook/user" },
+        { "value": "GET" }
+      ]
+    }
+  },
+  {
+    "name": "greeting_inline_reference",
+    "prompt": "Erstelle einen REST Webhook flow, welcher ein user objekt mit einem Feld 'name' entgegennimmt und als Antwort den Text 'Hallo <name>!' zurückgibt, wobei der Name direkt aus dem Request eingesetzt wird.",
+    "expected_flow": {
+      "name": "Greeting webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 200 },
+            { "value": {} },
+            {
+              "value": "Hallo ${user name}!",
+              "references": [
+                {
+                  "signature": "user name",
+                  "value": {
+                    "nodeFunctionId": 0,
+                    "referencePath": [{ "path": "name" }]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "name": "" } },
+        { "value": "/webhook/greeting" },
+        { "value": "GET" }
+      ]
+    }
+  }
+]
