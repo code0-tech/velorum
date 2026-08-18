@@ -1,10 +1,11 @@
 from difflib import SequenceMatcher
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, Iterator, List, Optional, Set
 
 from src.logger import get_logger
 from src.schema.flow_schema import (
     Flow,
     FlowSetting,
+    InlineReferenceValue,
     LiteralValue,
     NodeFunction,
     NodeParameterValue,
@@ -64,8 +65,56 @@ def _extract_referenced_node_ids(parameter: NodeParameterValue) -> Set[int]:
         referenced_ids.add(parameter.starting_node_id)
     elif isinstance(parameter, (NodeReferenceValue, SubFlowReferenceValue)) and parameter.node_id is not None:
         referenced_ids.add(parameter.node_id)
+    elif isinstance(parameter, LiteralValue) and parameter.references:
+        for reference in parameter.references:
+            referenced_ids |= _extract_referenced_node_ids(reference.value)
 
     return referenced_ids
+
+
+def _iter_strings(value: Any) -> Iterator[str]:
+    """Yield every string in a (possibly nested) literal value tree."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from _iter_strings(item)
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _iter_strings(item)
+
+
+def _clean_inline_references(parameter: NodeParameterValue) -> NodeParameterValue:
+    """Drop declared inline references that are never used via ``${signature}``.
+
+    The signature is arbitrary free text, so matching is done by literal
+    substring (``${<signature>}``) against every string in the value tree —
+    standalone, embedded, as an object value or as a list entry. Placeholders
+    without a matching declared reference are logged but left untouched, since a
+    free-text signature can itself contain ``}`` and cannot be repaired safely.
+    """
+    if not isinstance(parameter, LiteralValue) or not parameter.references:
+        return parameter
+
+    strings = list(_iter_strings(parameter.value))
+
+    used: List[InlineReferenceValue] = []
+    for reference in parameter.references:
+        placeholder = "${" + reference.signature + "}"
+        if any(placeholder in string for string in strings):
+            used.append(reference.model_copy(update={"value": _clean_inline_references(reference.value)}))
+        else:
+            log.debug(f"Dropping unused inline reference '{reference.signature}'")
+
+    declared_placeholders = {"${" + reference.signature + "}" for reference in parameter.references}
+    for string in strings:
+        index = string.find("${")
+        while index != -1:
+            if not any(string.startswith(placeholder, index) for placeholder in declared_placeholders):
+                log.warning(f"Inline placeholder without matching reference near: {string[index:index + 40]!r}")
+            index = string.find("${", index + 2)
+
+    return parameter.model_copy(update={"references": used or None})
 
 
 def _collect_reachable_node_ids(flow: Flow) -> Set[int]:
@@ -221,7 +270,10 @@ def flow_postprocessing(
                 f"parameter count {actual_count} → {expected_count}"
             )
 
-        normalized_parameters = _normalize_parameters(node.parameters, expected_count)
+        normalized_parameters = [
+            _clean_inline_references(parameter)
+            for parameter in _normalize_parameters(node.parameters, expected_count)
+        ]
         next_node_id = node.next_node_id if node.next_node_id in reachable_node_ids else None
 
         if node.next_node_id is not None and next_node_id is None:
