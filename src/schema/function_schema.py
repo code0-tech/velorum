@@ -1,6 +1,6 @@
 from typing import Optional, Any, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ParameterDefinition(BaseModel):
@@ -8,8 +8,7 @@ class ParameterDefinition(BaseModel):
     descriptions: Optional[str] = Field(None)
     names: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class FunctionDefinition(BaseModel):
@@ -20,5 +19,4 @@ class FunctionDefinition(BaseModel):
     parameter_definitions: Optional[List[ParameterDefinition]] = Field(None, alias="parameterDefinitions")
     signature: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)

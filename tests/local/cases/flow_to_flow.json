@@ -1,0 +1,114 @@
+[
+  {
+    "name": "change_status_code",
+    "prompt": "Ändere den HTTP-Statuscode der Antwort von 200 auf 404.",
+    "input_flow": {
+      "name": "User email webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 200 },
+            { "value": {} },
+            {
+              "nodeFunctionId": 0,
+              "referencePath": [{ "path": "email" }]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "email": "", "username": "" } },
+        { "value": "/webhook/user" },
+        { "value": "GET" }
+      ]
+    },
+    "expected_flow": {
+      "name": "User email webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 404 },
+            { "value": {} },
+            {
+              "nodeFunctionId": 0,
+              "referencePath": [{ "path": "email" }]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "email": "", "username": "" } },
+        { "value": "/webhook/user" },
+        { "value": "GET" }
+      ]
+    }
+  },
+  {
+    "name": "add_inline_greeting",
+    "prompt": "Antworte statt der reinen E-Mail mit dem Text 'Hallo <name>!', wobei der Name aus dem Request eingesetzt wird.",
+    "input_flow": {
+      "name": "User email webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 200 },
+            { "value": {} },
+            {
+              "nodeFunctionId": 0,
+              "referencePath": [{ "path": "email" }]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "name": "", "email": "" } },
+        { "value": "/webhook/user" },
+        { "value": "GET" }
+      ]
+    },
+    "expected_flow": {
+      "name": "User greeting webhook",
+      "type": "REST",
+      "startingNodeId": 1,
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            { "value": 200 },
+            { "value": {} },
+            {
+              "value": "Hallo ${user name}!",
+              "references": [
+                {
+                  "signature": "user name",
+                  "value": {
+                    "nodeFunctionId": 0,
+                    "referencePath": [{ "path": "name" }]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "settings": [
+        { "value": { "name": "", "email": "" } },
+        { "value": "/webhook/user" },
+        { "value": "GET" }
+      ]
+    }
+  }
+]

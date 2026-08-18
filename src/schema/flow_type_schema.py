@@ -15,8 +15,7 @@ class FlowTypeSetting(BaseModel):
     descriptions: Optional[str] = Field(None)
     names: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class FlowType(BaseModel):
@@ -27,5 +26,4 @@ class FlowType(BaseModel):
     names: Optional[str] = Field(None)
     signature: Optional[str] = Field(None)
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)

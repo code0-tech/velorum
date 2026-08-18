@@ -44,7 +44,14 @@ class PromptOrchestrator:
                     "CRITICAL: Output ONLY valid JSON. "
                     "Do not explain. Do not return the schema definition, return a populated instance of the schema.\n\n"
                     f"CHOOSE TYPE from: {flow_types_json}\n"
-                    f"USE FUNCTIONS from: {functions_json}\n"
+                    f"USE FUNCTIONS from: {functions_json}\n\n"
+                    "INLINE REFERENCES: A literal value may embed references via the exact "
+                    "placeholder ${<signature>}. The signature is arbitrary free text (it may "
+                    "contain spaces and special characters). Each placeholder used inside "
+                    "'value' MUST be declared in that literal's 'references' list with a "
+                    "matching 'signature' and a resolved 'value'. A ${<signature>} may stand "
+                    "for a whole value (a number, object or list entry) or be embedded inside "
+                    "a string; in objects and lists the placeholder is written as a string.\n"
                 )
             ),
             *few_shots,

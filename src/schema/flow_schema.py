@@ -32,12 +32,28 @@ class SubFlowValue(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class InlineReferenceValue(BaseModel):
+    # The signature is arbitrary free text; it is referenced inside `value`
+    # via the exact placeholder ``${<signature>}``.
+    signature: str
+    value: "NodeParameterValue"
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class LiteralValue(BaseModel):
+    # `value` behaves like a template: any occurrence of ``${<signature>}`` inside
+    # a (possibly nested) string — standalone as a whole value, embedded in a
+    # string, as an object field value or as a list entry — is substituted with
+    # the resolved value of the matching reference. velorum only carries the
+    # template together with its references; the resolution happens downstream.
     value: Any
+    references: Optional[List[InlineReferenceValue]] = None
     model_config = ConfigDict(populate_by_name=True, extra='forbid')
 
 
 NodeParameterValue = Union[LiteralValue, SubFlowValue, NodeReferenceValue, SubFlowReferenceValue, TriggerReferenceValue]
+
+InlineReferenceValue.model_rebuild()
 
 
 class NodeFunction(BaseModel):

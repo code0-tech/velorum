@@ -15,5 +15,18 @@ dependencies = [
     "pydantic==2.12.5",
     "qdrant-client>=1.16.1",
     "model2vec>=0.3.0",
-    "tucana==0.0.75",
+    "tucana==0.0.82",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+# Project root on sys.path so ``import tests.local...`` and ``import src...`` resolve.
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "local: model-backed tests that call a real LLM; run locally, auto-skipped in CI",
 ]

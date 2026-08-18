@@ -119,5 +119,87 @@
         }
       ]
     }
+  },
+  {
+    "prompt": "Erstelle einen Webhook flow, welcher ein user objekt (name, age, role) entgegennimmt und ein Objekt mit einer Begrüßung 'Hallo <name>', dem Alter und einer Tag-Liste zurückgibt.",
+    "flow": {
+      "name": "User greeting webhook",
+      "nodes": [
+        {
+          "functionIdentifier": "rest::control::respond",
+          "id": 1,
+          "parameters": [
+            {
+              "value": 200
+            },
+            {
+              "value": {}
+            },
+            {
+              "value": {
+                "message": "Hallo ${user name}!",
+                "age": "${user age}",
+                "tags": [
+                  "default",
+                  "${user role}"
+                ]
+              },
+              "references": [
+                {
+                  "signature": "user name",
+                  "value": {
+                    "nodeFunctionId": 0,
+                    "referencePath": [
+                      {
+                        "path": "name"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "signature": "user age",
+                  "value": {
+                    "nodeFunctionId": 0,
+                    "referencePath": [
+                      {
+                        "path": "age"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "signature": "user role",
+                  "value": {
+                    "nodeFunctionId": 0,
+                    "referencePath": [
+                      {
+                        "path": "role"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "startingNodeId": 1,
+      "type": "REST",
+      "settings": [
+        {
+          "value": {
+            "name": "",
+            "age": 0,
+            "role": ""
+          }
+        },
+        {
+          "value": "/webhook/greeting"
+        },
+        {
+          "value": "GET"
+        }
+      ]
+    }
   }
 ]
