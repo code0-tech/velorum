@@ -32,6 +32,18 @@ class SubFlowValue(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
+class SubFlowFunctionValue(BaseModel):
+    # The second form of a sub flow: instead of an inline body defined by nodes of
+    # the surrounding flow (see `SubFlowValue`), it delegates straight to an
+    # existing function, which must be one of the available function definitions.
+    # `SubFlowFunction.definition_source` is deliberately not represented: velorum
+    # has no way to author it, and offering the field only invites the model to
+    # invent a lambda body for it. `NodeFunction.definition_source` is left out for
+    # the same reason.
+    function_identifier: str = Field(alias="functionIdentifier")
+    model_config = ConfigDict(populate_by_name=True, extra='forbid')
+
+
 class InlineReferenceValue(BaseModel):
     # The signature is arbitrary free text; it is referenced inside `value`
     # via the exact placeholder ``${<signature>}``.
@@ -51,7 +63,14 @@ class LiteralValue(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='forbid')
 
 
-NodeParameterValue = Union[LiteralValue, SubFlowValue, NodeReferenceValue, SubFlowReferenceValue, TriggerReferenceValue]
+NodeParameterValue = Union[
+    LiteralValue,
+    SubFlowValue,
+    SubFlowFunctionValue,
+    NodeReferenceValue,
+    SubFlowReferenceValue,
+    TriggerReferenceValue,
+]
 
 InlineReferenceValue.model_rebuild()
 
