@@ -1,4 +1,5 @@
 import time
+from typing import Set
 
 import grpc
 import tucana.generated.velorum.generate_pb2 as pb2
@@ -16,13 +17,39 @@ from src.model import load_vector_model
 from src.orchestrator.flow_orchestrator import FlowOrchestrator
 from src.orchestrator.prompt_orchestrator import PromptOrchestrator
 from src.postprocessing.flow_post import flow_postprocessing
-from src.schema.flow_schema import Flow
+from src.schema.flow_schema import Flow, LiteralValue, NodeParameterValue, SubFlowFunctionValue
 from src.store.few_shots_store import FewShotsStore
 from src.store.flow_type_store import FlowTypeStore
 from src.store.function_store import FunctionStore
 from src.store.model_store import ModelStore
 
 log = get_logger("generate_endpoint")
+
+
+def _parameter_function_identifiers(parameter: NodeParameterValue) -> Set[str]:
+    """Function identifiers a single parameter references via a sub flow."""
+    if isinstance(parameter, SubFlowFunctionValue):
+        return {parameter.function_identifier}
+    if isinstance(parameter, LiteralValue) and parameter.references:
+        identifiers: Set[str] = set()
+        for reference in parameter.references:
+            identifiers |= _parameter_function_identifiers(reference.value)
+        return identifiers
+    return set()
+
+
+def _flow_function_identifiers(flow: Flow) -> Set[str]:
+    """Every function a flow depends on.
+
+    Besides the nodes themselves this covers sub flows of the ``functionIdentifier``
+    form, which delegate to a function without introducing a node for it.
+    """
+    identifiers = {node.function_identifier for node in flow.nodes}
+    for node in flow.nodes:
+        for parameter in node.parameters or []:
+            identifiers |= _parameter_function_identifiers(parameter)
+    return identifiers
+
 
 
 class GenerateService(pb2_grpc.GenerateServiceServicer):
@@ -164,9 +191,9 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         # project's function store — otherwise the example would teach the model to
         # use functions that do not exist for this project.
         candidate_function_ids = list({
-            node.function_identifier
+            identifier
             for fS in prompt_few_shots
-            for node in fS.flow.nodes
+            for identifier in _flow_function_identifiers(fS.flow)
         })
         available_function_definitions = self.function_store.find_all(
             group_identifier=str(request.project_id),
@@ -176,7 +203,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
         filtered_few_shots = [
             fS for fS in prompt_few_shots
-            if all(node.function_identifier in available_function_ids for node in fS.flow.nodes)
+            if _flow_function_identifiers(fS.flow) <= available_function_ids
         ]
         dropped_few_shots = len(prompt_few_shots) - len(filtered_few_shots)
         if dropped_few_shots:
@@ -184,9 +211,9 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         prompt_few_shots = filtered_few_shots
 
         few_shot_function_ids = list({
-            node.function_identifier
+            identifier
             for fS in prompt_few_shots
-            for node in fS.flow.nodes
+            for identifier in _flow_function_identifiers(fS.flow)
         })
         few_shot_flow_type_ids = list({
             fS.flow.type
@@ -408,9 +435,9 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         # project's function store — otherwise the example would teach the model to
         # use functions that do not exist for this project.
         flow_candidate_function_ids = list({
-            node.function_identifier
+            identifier
             for fS in flow_few_shots
-            for node in fS.flow.nodes
+            for identifier in _flow_function_identifiers(fS.flow)
         })
         flow_available_function_definitions = self.function_store.find_all(
             group_identifier=str(request.project_id),
@@ -420,7 +447,7 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
 
         filtered_flow_few_shots = [
             fS for fS in flow_few_shots
-            if all(node.function_identifier in flow_available_function_ids for node in fS.flow.nodes)
+            if _flow_function_identifiers(fS.flow) <= flow_available_function_ids
         ]
         dropped_flow_few_shots = len(flow_few_shots) - len(filtered_flow_few_shots)
         if dropped_flow_few_shots:
@@ -428,9 +455,9 @@ class GenerateService(pb2_grpc.GenerateServiceServicer):
         flow_few_shots = filtered_flow_few_shots
 
         flow_few_shot_function_ids = list({
-            node.function_identifier
+            identifier
             for fS in flow_few_shots
-            for node in fS.flow.nodes
+            for identifier in _flow_function_identifiers(fS.flow)
         })
         flow_few_shot_flow_type_ids = list({
             fS.flow.type
