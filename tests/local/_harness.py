@@ -112,6 +112,8 @@ def _param_to_text(parameter: NodeParameterValue) -> str:
         parts.append(f"path={joined}")
     if getattr(parameter, "starting_node_id", None) is not None:
         parts.append("subflow")
+    if getattr(parameter, "function_identifier", None) is not None:
+        parts.append(f"subflow_function={parameter.function_identifier}")
     if getattr(parameter, "input_index", None) is not None:
         parts.append("input_reference")
     elif getattr(parameter, "node_id", None) is not None:
