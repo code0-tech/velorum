@@ -5,8 +5,8 @@ These tests exercise the **real** generation pipeline end to end:
 - `test_prompt_to_flow.py` → `GenerateService.Prompt` (prompt → flow)
 - `test_flow_to_flow.py` → `GenerateService.Flow` (existing flow + instruction → flow)
 
-Each test builds a real gRPC request from the fixtures in `cli/` (data types,
-flow types, functions), runs vector-store retrieval + LLM orchestration +
+Each test builds a real gRPC request from the fixtures in `fixtures/` (data
+types, flow types, functions), runs vector-store retrieval + LLM orchestration +
 postprocessing exactly as the server does, and scores the generated flow against
 a hand-written expected flow using **cosine similarity** of their embeddings
 (same `model2vec` model the service uses for retrieval).
