@@ -2,7 +2,7 @@ import tucana.generated.shared.flow_pb2 as flow_pb2
 
 from src.mapper.flow_literal_value_mapper import map_to_grpc_literal_value, map_to_literal_value_schema
 from src.schema.flow_schema import NodeParameterValue, LiteralValue, ReferencePath, TriggerReferenceValue, \
-    SubFlowReferenceValue, NodeReferenceValue, SubFlowValue, InlineReferenceValue
+    SubFlowReferenceValue, NodeReferenceValue, SubFlowValue, SubFlowFunctionValue, InlineReferenceValue
 
 
 def map_to_value_schema(grpc_value: flow_pb2.NodeValue) -> NodeParameterValue:
@@ -36,10 +36,16 @@ def map_to_value_schema(grpc_value: flow_pb2.NodeValue) -> NodeParameterValue:
                 nodeFunctionId=grpc_value.reference_value.node_id,
                 referencePath=ref_paths
             )
-    elif grpc_value.HasField('sub_flow') and grpc_value.sub_flow.HasField("starting_node_id"):
-        return SubFlowValue(
-            startingNodeId=grpc_value.sub_flow.starting_node_id
-        )
+    elif grpc_value.HasField('sub_flow'):
+        sub_flow = grpc_value.sub_flow
+        if sub_flow.HasField("starting_node_id"):
+            return SubFlowValue(
+                startingNodeId=sub_flow.starting_node_id
+            )
+        elif sub_flow.HasField("function"):
+            return SubFlowFunctionValue(
+                functionIdentifier=sub_flow.function.function_identifier
+            )
 
     return LiteralValue(value=None)
 
@@ -56,6 +62,10 @@ def map_to_grpc_value(value: NodeParameterValue) -> flow_pb2.NodeValue:
     elif hasattr(value, 'starting_node_id') and value.starting_node_id is not None:
         grpc_sub_flow = flow_pb2.SubFlow()
         grpc_sub_flow.starting_node_id = value.starting_node_id
+        grpc_val.sub_flow.CopyFrom(grpc_sub_flow)
+    elif hasattr(value, 'function_identifier'):
+        grpc_sub_flow = flow_pb2.SubFlow()
+        grpc_sub_flow.function.function_identifier = value.function_identifier
         grpc_val.sub_flow.CopyFrom(grpc_sub_flow)
     elif hasattr(value, 'node_id') and hasattr(value, 'input_index') and hasattr(value, 'parameter_index'):
         if value.node_id is not None:

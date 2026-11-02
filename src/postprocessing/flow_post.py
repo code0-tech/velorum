@@ -10,6 +10,7 @@ from src.schema.flow_schema import (
     NodeFunction,
     NodeParameterValue,
     NodeReferenceValue,
+    SubFlowFunctionValue,
     SubFlowReferenceValue,
     SubFlowValue,
 )
@@ -61,6 +62,9 @@ def _normalize_parameters(parameters: Optional[List[NodeParameterValue]], expect
 def _extract_referenced_node_ids(parameter: NodeParameterValue) -> Set[int]:
     referenced_ids: Set[int] = set()
 
+    # Deliberately absent here: SubFlowFunctionValue. It delegates to an existing
+    # function rather than to nodes of this flow, so it contributes no node id to
+    # reachability — it must not be folded into the SubFlowValue branch below.
     if isinstance(parameter, SubFlowValue):
         referenced_ids.add(parameter.starting_node_id)
     elif isinstance(parameter, (NodeReferenceValue, SubFlowReferenceValue)) and parameter.node_id is not None:
@@ -70,6 +74,41 @@ def _extract_referenced_node_ids(parameter: NodeParameterValue) -> Set[int]:
             referenced_ids |= _extract_referenced_node_ids(reference.value)
 
     return referenced_ids
+
+
+
+def _drop_unknown_sub_flow_functions(
+    parameter: NodeParameterValue,
+    known_identifiers: Set[str],
+) -> NodeParameterValue:
+    """Clear sub flow function references that name a function nobody knows.
+
+    Correcting them by name similarity was tried and discarded: the closest match
+    to an invented ``isPositive`` is an unrelated function, which turns an obvious
+    defect into a plausible-looking wrong one. An unusable reference is therefore
+    emptied instead of guessed, the same fallback `_normalize_parameters` uses for
+    a missing parameter.
+    """
+    if isinstance(parameter, SubFlowFunctionValue):
+        if parameter.function_identifier in known_identifiers:
+            return parameter
+        log.warning(
+            f"Sub flow references unknown function "
+            f"'{parameter.function_identifier}' — parameter cleared"
+        )
+        return LiteralValue(value=None)
+
+    if isinstance(parameter, LiteralValue) and parameter.references:
+        return parameter.model_copy(update={
+            "references": [
+                reference.model_copy(update={
+                    "value": _drop_unknown_sub_flow_functions(reference.value, known_identifiers)
+                })
+                for reference in parameter.references
+            ]
+        })
+
+    return parameter
 
 
 def _iter_strings(value: Any) -> Iterator[str]:
@@ -271,7 +310,10 @@ def flow_postprocessing(
             )
 
         normalized_parameters = [
-            _clean_inline_references(parameter)
+            _drop_unknown_sub_flow_functions(
+                _clean_inline_references(parameter),
+                set(function_by_identifier),
+            )
             for parameter in _normalize_parameters(node.parameters, expected_count)
         ]
         next_node_id = node.next_node_id if node.next_node_id in reachable_node_ids else None

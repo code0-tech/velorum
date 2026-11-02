@@ -11,13 +11,14 @@ similarity of their embeddings, so small, non-deterministic wording differences
 in the model output do not make the tests flaky.
 """
 
+import json
 import sys
 from pathlib import Path
 from typing import List, Tuple
 
 # The generated tucana protobuf modules use absolute imports such as
-# ``from shared import struct_pb2`` — the same sys.path setup that ``main.py`` and
-# ``cli/cli.py`` perform is required before importing anything proto-backed.
+# ``from shared import struct_pb2`` — the same sys.path setup that ``main.py``
+# performs is required before importing anything proto-backed.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _VENV_SITE_PACKAGES = PROJECT_ROOT / ".venv" / "lib" / "python3.12" / "site-packages"
 _TUCANA_GENERATED = _VENV_SITE_PACKAGES / "tucana" / "generated"
@@ -29,12 +30,14 @@ for _path in (str(PROJECT_ROOT), str(_TUCANA_GENERATED)):
 import numpy as np
 import tucana.generated.velorum.generate_pb2 as pb2
 
-from cli.cli import FlowGeneratorCLI
 from src.mapper.data_type_mapper import map_to_grpc_data_type
 from src.mapper.flow_mapper import map_to_grpc_flow
 from src.mapper.flow_types_mapper import map_to_grpc_flow_type
 from src.mapper.function_mapper import map_to_grpc_function
+from src.schema.data_type_schema import DataType
 from src.schema.flow_schema import Flow, NodeParameterValue
+from src.schema.flow_type_schema import FlowType, FlowTypeSetting
+from src.schema.function_schema import FunctionDefinition, ParameterDefinition
 
 # The model identifier must exist in ``models.configuration.json``; the threshold
 # is the minimum cosine similarity for a case to pass. Adjust here if needed.
@@ -42,12 +45,70 @@ MODEL_IDENTIFIER = "gpt-oss-120b"
 SIMILARITY_THRESHOLD = 0.85
 PROJECT_ID = 424242
 
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+def _load_fixture(filename: str) -> List[dict]:
+    with open(FIXTURES_DIR / filename, "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def _load_data_types() -> List[DataType]:
+    return [
+        DataType(
+            identifier=item["identifier"],
+            type=item["type"],
+            genericKeys=item["genericKeys"],
+        )
+        for item in _load_fixture("datatypes.json")
+    ]
+
+
+def _load_flow_types() -> List[FlowType]:
+    return [
+        FlowType(
+            identifier=item["identifier"],
+            signature=item["signature"],
+            names=item["names"][0]["content"],
+            aliases=item["aliases"][0]["content"],
+            descriptions=item["descriptions"][0]["content"],
+            flowTypeSettings=[
+                FlowTypeSetting(
+                    names=setting["names"][0]["content"],
+                    descriptions=setting["descriptions"][0]["content"],
+                    defaultValue=setting.get("defaultValue"),
+                )
+                for setting in item["flowTypeSettings"]
+            ],
+        )
+        for item in _load_fixture("flowtypes.json")
+    ]
+
+
+def _load_functions() -> List[FunctionDefinition]:
+    return [
+        FunctionDefinition(
+            identifier=item["identifier"],
+            signature=item["signature"],
+            names=item["names"][0]["content"],
+            aliases=item["aliases"][0]["content"],
+            descriptions=item["descriptions"][0]["content"],
+            parameterDefinitions=[
+                ParameterDefinition(
+                    names=parameter["names"][0]["content"],
+                    descriptions=parameter["descriptions"][0]["content"],
+                    defaultValue=parameter.get("defaultValue"),
+                )
+                for parameter in item["parameterDefinitions"]["nodes"]
+            ],
+        )
+        for item in _load_fixture("functions.json")
+    ]
+
 
 def load_definitions() -> Tuple[list, list, list]:
-    """Load the project's data types, flow types and functions from the CLI fixtures."""
-    cli = FlowGeneratorCLI()
-    data_types, flow_types, functions = cli.load_all()
-    return data_types, flow_types, functions
+    """Load the project's data types, flow types and functions from the fixtures."""
+    return _load_data_types(), _load_flow_types(), _load_functions()
 
 
 def build_prompt_request(prompt: str) -> pb2.PromptRequest:
@@ -112,6 +173,8 @@ def _param_to_text(parameter: NodeParameterValue) -> str:
         parts.append(f"path={joined}")
     if getattr(parameter, "starting_node_id", None) is not None:
         parts.append("subflow")
+    if getattr(parameter, "function_identifier", None) is not None:
+        parts.append(f"subflow_function={parameter.function_identifier}")
     if getattr(parameter, "input_index", None) is not None:
         parts.append("input_reference")
     elif getattr(parameter, "node_id", None) is not None:
